@@ -4,7 +4,7 @@ import threading
 import time
 
 import cv2
-from flask import Flask, Response
+from flask import Flask, Response, request, jsonify
 
 import vision
 
@@ -61,7 +61,6 @@ config = load_config()
 
 
 def worker():
-    print 'Worker'
     while True:
         img = get_image()
         state['img'] = img
@@ -77,12 +76,12 @@ def worker():
 
 @app.route('/config', methods=['GET', 'POST'])
 def config_route():
-    if (request.method == 'POST'):
+    if request.method == 'POST':
         global config
         config = request.form
-        return Flask.jsonify(**config)
+        return jsonify(**config)
     else:
-        return Flask.jsonify(**config)
+        return jsonify(**config)
 
 
 @app.route('/image')
