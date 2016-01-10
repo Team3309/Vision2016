@@ -66,9 +66,11 @@ def worker():
         state['img'] = img
         args = config.copy()
         args['img'] = img
+        args['output_images'] = {}
 
         targets = vision.find(**args)
         state['targets'] = targets
+        state['output_images'] = args['output_images']
         # 30fps
         time.sleep(0.33)
     return
@@ -86,7 +88,21 @@ def config_route():
 
 @app.route('/image')
 def image_route():
-    return state['img']
+    _, jpeg = cv2.imencode('.jpg', state['output_images']['img'])
+    return Response(jpeg.tobytes(), mimetype='image/jpeg')
+
+
+@app.route('/result')
+def result_image_route():
+    _, jpeg = cv2.imencode('.jpg', state['output_images']['result'])
+    return Response(jpeg.tobytes(), mimetype='image/jpeg')
+
+
+@app.route('/binary')
+def bin_image_route():
+    _, jpeg = cv2.imencode('.jpg', state['output_images']['bin'])
+    return Response(jpeg.tobytes(), mimetype='image/jpeg')
+
 
 if __name__ == "__main__":
     t = threading.Thread(target=worker)
