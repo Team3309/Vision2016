@@ -62,3 +62,4 @@ bin/
 *.iml
 .idea/
 include/
+pip-selfcheck.json
