@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vision</title>
+    <style>
+
+    </style>
+    <script src="jquery.min.js" type="application/javascript"></script>
+    <script>
+        $('document').ready(function () {
+            console.log('init');
+            $('input').change(function () {
+                console.log('input changed');
+            });
+        });
+    </script>
+</head>
+<body>
+<div class="controls">
+    <label>
+        Min Hue
+        <input id="min-hue" type="range" min="0" max="255"/>
+    </label>
+    <label>
+        Max Hue
+        <input id="max-hue" type="range" min="0" max="255"/>
+    </label>
+    <br>
+    <label>
+        Min Sat
+        <input id="min-sat" type="range" min="0" max="255"/>
+    </label>
+    <label>
+        Max Sat
+        <input id="max-sat" type="range" min="0" max="255"/>
+    </label>
+    <br>
+    <label>
+        Min Brightness
+        <input id="min-val" type="range" min="0" max="255"/>
+    </label>
+    <label>
+        Max Brightness
+        <input id="max-val" type="range" min="0" max="255"/>
+    </label>
+</div>
+</body>
+</html>

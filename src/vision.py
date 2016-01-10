@@ -5,6 +5,9 @@ import numpy as np
 
 import vision_util as vision_common
 
+# limit blobs to at least 1000px^2
+min_size = 1000
+
 
 def hull_score(hull):
     """
@@ -23,8 +26,7 @@ def hull_score(hull):
         # the target is 1ft8in wide by 1ft2in high, so ratio of width/height is 1.429
         ratio_score = 100 - abs((width / height) - 1.429)
 
-    # cut off minimum area at 100px^2
-    if cv2.contourArea(hull) < 500:
+    if cv2.contourArea(hull) < min_size:
         return 0
 
     return ratio_score
@@ -48,8 +50,7 @@ def contour_score(contour):
     :param contour:
     :return:
     """
-    # cut off minimum area at 100px^2
-    if cv2.contourArea(contour) < 500:
+    if cv2.contourArea(contour) < min_size:
         return 0
     approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
     # the goal marker has 8 sides, we are allowing for 7 or 8 in case one is missing
@@ -74,7 +75,7 @@ def contour_filter(contour, min_score=95):
 def find(img, hue_min=160, hue_max=255, sat_min=220, sat_max=255, val_min=150, val_max=190, output_images={}):
     """
     Detect direction markers. These are the orange markers on the bottom of the pool that point ot the next objective.
-    :param img: HSV image from the bottom camera
+    :param img: HSV image from the camera
     :return: a list of tuples indicating the rectangles detected (center, width x height, angle)
     """
 
