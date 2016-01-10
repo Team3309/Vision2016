@@ -4,46 +4,100 @@
     <meta charset="UTF-8">
     <title>Vision</title>
     <style>
-
+        img {
+            width: 480px
+        }
     </style>
     <script src="jquery.min.js" type="application/javascript"></script>
     <script>
         $('document').ready(function () {
             console.log('init');
-            $('input').change(function () {
+            $('input').on('input', function (event) {
                 console.log('input changed');
+                var elem = $(event.target);
+                elem.next().text(elem.val());
+                $('#config-form').submit();
             });
+
+            //load initial values
+            $.getJSON('/config', function (data) {
+                for (var key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        $('#' + key).val(data[key]);
+                        $('#' + key).next().text(data[key]);
+                    }
+                }
+            });
+
+            //make the initial labels match the values
+            $('input').each(function (index, elem) {
+                $(elem).next().text($(elem).val())
+            });
+
+            $('form').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    url: $(this).attr('action') || window.location.pathname,
+                    type: "POST",
+                    data: $(this).serialize(),
+                    success: function (data) {
+                    },
+                    error: function (jXHR, textStatus, errorThrown) {
+                        alert(errorThrown);
+                    }
+                });
+            });
+
+            // refresh images at 10fps
+            setInterval(function () {
+                var d = new Date();
+                $('#image').attr('src', '/image?'+d.getTime());
+                $('#binary').attr('src', '/binary?'+d.getTime());
+                $('#result').attr('src', '/result?'+d.getTime());
+            }, 500)
         });
     </script>
 </head>
 <body>
 <div class="controls">
-    <label>
-        Min Hue
-        <input id="min-hue" type="range" min="0" max="255"/>
-    </label>
-    <label>
-        Max Hue
-        <input id="max-hue" type="range" min="0" max="255"/>
-    </label>
+    <form id="config-form" action="/config" method="post">
+        <label>
+            Min Hue
+            <input id="hue_min" type="range" min="0" max="255" name="hue_min"/>
+            <span>1</span>
+        </label>
+        <label>
+            Max Hue
+            <input id="hue_max" type="range" min="0" max="255" name="hue_max"/>
+            <span></span>
+        </label>
+        <br>
+        <label>
+            Min Sat
+            <input id="sat_min" type="range" min="0" max="255" name="sat_min"/>
+            <span></span>
+        </label>
+        <label>
+            Max Sat
+            <input id="sat_max" type="range" min="0" max="255" name="sat_max"/>
+            <span></span>
+        </label>
+        <br>
+        <label>
+            Min Brightness
+            <input id="val_min" type="range" min="0" max="255" name="val_min"/>
+            <span></span>
+        </label>
+        <label>
+            Max Brightness
+            <input id="val_max" type="range" min="0" max="255" name="val_max"/>
+            <span></span>
+        </label>
+    </form>
     <br>
-    <label>
-        Min Sat
-        <input id="min-sat" type="range" min="0" max="255"/>
-    </label>
-    <label>
-        Max Sat
-        <input id="max-sat" type="range" min="0" max="255"/>
-    </label>
-    <br>
-    <label>
-        Min Brightness
-        <input id="min-val" type="range" min="0" max="255"/>
-    </label>
-    <label>
-        Max Brightness
-        <input id="max-val" type="range" min="0" max="255"/>
-    </label>
+    <img id="image" src="/image"/>
+    <img id="binary" src="/binary"/> <br>
+    <img id="result" src="/result"/> <br>
 </div>
 </body>
 </html>

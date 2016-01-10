@@ -72,7 +72,7 @@ def contour_filter(contour, min_score=95):
     return True
 
 
-def find(img, hue_min=160, hue_max=255, sat_min=220, sat_max=255, val_min=150, val_max=190, output_images={}):
+def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_images):
     """
     Detect direction markers. These are the orange markers on the bottom of the pool that point ot the next objective.
     :param img: HSV image from the camera

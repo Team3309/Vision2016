@@ -65,6 +65,7 @@ def worker():
         img = get_image()
         state['img'] = img
         args = config.copy()
+        print(args)
         args['img'] = img
         args['output_images'] = {}
 
@@ -80,7 +81,8 @@ def worker():
 def config_route():
     if request.method == 'POST':
         global config
-        config = request.form
+        config = dict((key, int(request.form.get(key))) for key in request.form.keys())
+        save_config(config)
         return jsonify(**config)
     else:
         return jsonify(**config)
@@ -88,7 +90,7 @@ def config_route():
 
 @app.route('/image')
 def image_route():
-    _, jpeg = cv2.imencode('.jpg', state['output_images']['img'])
+    _, jpeg = cv2.imencode('.jpg', state['img'])
     return Response(jpeg.tobytes(), mimetype='image/jpeg')
 
 
