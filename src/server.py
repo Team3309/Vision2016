@@ -65,7 +65,6 @@ def worker():
         img = get_image()
         state['img'] = img
         args = config.copy()
-        print(args)
         args['img'] = img
         args['output_images'] = {}
 
