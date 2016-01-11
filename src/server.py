@@ -47,7 +47,7 @@ def load_config():
 
 def save_config(config):
     with open('config.json', 'w') as outfile:
-        outfile.write(json.dumps(config))
+        outfile.write(json.dumps(config, indent=2, separators=(',', ': ')))
         outfile.close()
 
 

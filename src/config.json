@@ -1,1 +1,8 @@
-{"hue_max": 255, "sat_min": 193, "sat_max": 255, "val_min": 142, "hue_min": 132, "val_max": 187}
+{
+  "hue_max": 255,
+  "sat_min": 193,
+  "sat_max": 255,
+  "val_min": 142,
+  "hue_min": 132,
+  "val_max": 187
+}
