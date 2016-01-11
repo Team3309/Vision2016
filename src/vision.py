@@ -124,17 +124,20 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     #     score = str(hull_score(hull))
     #     cv2.putText(img, score, center, cv2.FONT_HERSHEY_SIMPLEX, 4, (255, 0, 0), 1)
 
-    rects = map(lambda hull: cv2.minAreaRect(hull), hulls)
-    # shape[0] is the number of rows because matrices are dumb
-    rects = map(
-        lambda rect: ((rect[0][1] / img.shape[1], rect[0][0] / img.shape[0]), rect[1], vision_common.angle(rect)),
-        rects)
+    rects = map(lambda hull: cv2.boundingRect(hull), hulls)
     # convert to the targeting system of [-1, 1]
-    rects = map(lambda rect: (((rect[0][0] * 2) - 1, (rect[0][1] * 2) - 1), rect[1], rect[2]), rects)
+    imheight, imwidth, _ = img.shape
+    imheight = float(imheight)
+    imwidth = float(imwidth)
+    rects = map(lambda rect: (float(rect[0] / imwidth), float(rect[1] / imheight), rect[2], rect[3]), rects)
+    rects = map(lambda rect: ((rect[0] * 2) - 1, -(rect[1] * 2) + 1, rect[2], rect[3]), rects)
 
     output_images['result'] = img
 
-    return rects
+    targets = map(lambda rect: {'pos': {'x': rect[0], 'y': rect[1]}, 'size': {'width': rect[2], 'height': rect[3]}},
+                  rects)
+
+    return targets
 
 
 def nothing(x):

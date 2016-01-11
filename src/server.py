@@ -87,6 +87,12 @@ def config_route():
         return jsonify(**config)
 
 
+@app.route('/targets')
+def targets_route():
+    targets = state['targets']
+    return Response(json.dumps(targets), mimetype='application/json')
+
+
 @app.route('/image')
 def image_route():
     _, jpeg = cv2.imencode('.jpg', state['img'])
