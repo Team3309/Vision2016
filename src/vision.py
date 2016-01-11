@@ -9,13 +9,13 @@ import vision_util as vision_common
 min_size = 1000
 
 
-def hull_score(hull):
+def aspect_ratio_score(contour):
     """
     Give a score to a convex hull based on how likely it is to be a top goal.
     :param hull: convex hull to test
     :return: Score based on the ratio of side lengths and a minimum area
     """
-    rect = cv2.minAreaRect(hull)
+    rect = cv2.minAreaRect(contour)
     width = rect[1][0]
     height = rect[1][1]
 
@@ -26,25 +26,10 @@ def hull_score(hull):
         # the target is 1ft8in wide by 1ft2in high, so ratio of width/height is 1.429
         ratio_score = 100 - abs((width / height) - 1.429)
 
-    if cv2.contourArea(hull) < min_size:
-        return 0
-
     return ratio_score
 
 
-def hull_filter(hull, min_score=95):
-    """
-    Threshold for removing hulls from positive detection.
-    :param hull: convex hull to test
-    :return: True if it is a good match, False if it was a bad match (false positive).
-    """
-    score = hull_score(hull)
-    if score < min_score or math.isnan(score):
-        return False
-    return True
-
-
-def contour_score(contour):
+def side_score(contour):
     """
     Give a score for a contour based on how likely it is to be a high goal
     :param contour:
@@ -53,22 +38,49 @@ def contour_score(contour):
     if cv2.contourArea(contour) < min_size:
         return 0
     approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
-    # the goal marker has 8 sides, we are allowing for 7 or 8 in case one is missing
+    # the goal marker has 8 sides
     side_count = len(approx)
     if side_count == 8:
         return 100
     return 0
 
 
+def coverage_score(contour):
+    contour_area = cv2.contourArea(contour)
+    bounding_size = cv2.boundingRect(contour)
+    bounding_area = bounding_size[2] * bounding_size[3]
+    # ideal area is 1/3
+    return 100 - (bounding_area / contour_area - (1 / 3))
+
+
+def moment_score(contour):
+    moments = cv2.moments(contour)
+    hu = cv2.HuMoments(moments)
+    return 100 - (hu[6] * 100)
+
+
 def contour_filter(contour, min_score=95):
     """
     Threshold for removing hulls from positive detection.
-    :param hull: convex hull to test
     :return: True if it is a good match, False if it was a bad match (false positive).
     """
-    score = contour_score(contour)
-    if score < min_score or math.isnan(score):
+
+    # filter out particles less than 1000px^2
+    bounding = cv2.boundingRect(contour)
+    bounding_area = bounding[2] * bounding[3]
+    if bounding_area < 1000:
         return False
+
+    aspect = aspect_ratio_score(contour)
+    if aspect < min_score or math.isnan(aspect):
+        return False
+    coverage = coverage_score(contour)
+    if coverage < min_score or math.isnan(coverage):
+        return False
+    moment = moment_score(contour)
+    if moment < min_score:
+        return False
+
     return True
 
 
@@ -102,19 +114,8 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     print 'contour filtered ', original_count, ' to ', len(filtered_contours)
     polys = map(lambda contour: cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True), filtered_contours)
 
-    # now process based on convex hulls
-    hulls = vision_common.convex_hulls(filtered_contours)
-    cv2.drawContours(bin, hulls, -1, 255)
-    original_count = len(hulls)
-
-    # remove convex hulls that don't pass our scoring threshold
-    hulls = filter(hull_filter, hulls)
-    print 'hull filtered ', original_count, ' to ', len(hulls)
-
     # draw pink lines on all contours
     cv2.drawContours(img, contours, -1, (203, 192, 255), -1)
-    # draw hulls in Blaze Orange
-    cv2.drawContours(img, hulls, -1, (0, 102, 255), -1)
     # draw green outlines so we know it actually detected it
     cv2.drawContours(img, polys, -1, (255, 0, 0), 2)
 
@@ -124,7 +125,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     #     score = str(hull_score(hull))
     #     cv2.putText(img, score, center, cv2.FONT_HERSHEY_SIMPLEX, 4, (255, 0, 0), 1)
 
-    original_rects = map(lambda hull: cv2.boundingRect(hull), hulls)
+    original_rects = map(lambda contour: cv2.boundingRect(contour), filtered_contours)
     # convert to the targeting system of [-1, 1]
     imheight, imwidth, _ = img.shape
     imheight = float(imheight)
