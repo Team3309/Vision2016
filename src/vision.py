@@ -124,13 +124,26 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     #     score = str(hull_score(hull))
     #     cv2.putText(img, score, center, cv2.FONT_HERSHEY_SIMPLEX, 4, (255, 0, 0), 1)
 
-    rects = map(lambda hull: cv2.boundingRect(hull), hulls)
+    original_rects = map(lambda hull: cv2.boundingRect(hull), hulls)
     # convert to the targeting system of [-1, 1]
     imheight, imwidth, _ = img.shape
     imheight = float(imheight)
     imwidth = float(imwidth)
-    rects = map(lambda rect: (float(rect[0] / imwidth), float(rect[1] / imheight), rect[2], rect[3]), rects)
+    rects = map(lambda rect: (float(rect[0] / imwidth), float(rect[1] / imheight), rect[2], rect[3]), original_rects)
     rects = map(lambda rect: ((rect[0] * 2) - 1, -(rect[1] * 2) + 1, rect[2], rect[3]), rects)
+
+    # draw targeting coordinate system on top of the result image
+    # axes
+    cv2.line(img, (int(imwidth / 2), 0), (int(imwidth / 2), int(imheight)), (255, 255, 255), 5)
+    cv2.line(img, (0, int(imheight / 2)), (int(imwidth), int(imheight / 2)), (255, 255, 255), 5)
+    # aiming reticle
+    cv2.circle(img, (int(imwidth / 2), int(imheight / 2)), 100, (255, 255, 255), 5)
+
+    # draw dots on the center of each target
+    for rect in original_rects:  # use original_rects so we don't have to recalculate image coords
+        x = rect[0] + (rect[2] / 2)
+        y = rect[1]
+        cv2.circle(img, (x, y), 20, (0, 0, 255), -1)
 
     output_images['result'] = img
 
