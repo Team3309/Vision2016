@@ -51,8 +51,16 @@ def save_config(config):
         outfile.close()
 
 
+image_count = 0
+
+
 def get_image():
-    img = cv2.imread('/Users/vmagro/Desktop/tower.png', cv2.IMREAD_COLOR)
+    # img = cv2.imread('/Users/vmagro/Desktop/tower.png', cv2.IMREAD_COLOR)
+    global image_count
+    path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
+    print(path)
+    img = cv2.imread(path, cv2.IMREAD_COLOR)
+    image_count = (image_count + 1) % 350
     return img
 
 
