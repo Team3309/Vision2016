@@ -56,15 +56,75 @@ def coverage_score(contour):
 def moment_score(contour):
     moments = cv2.moments(contour)
     hu = cv2.HuMoments(moments)
+    # hu[6] should be close to 0
     return 100 - (hu[6] * 100)
 
 
-def contour_filter(contour, min_score=95):
+def col_profile(num_cols, height):
+    profile = np.zeros(num_cols)
+    peak_width = int(math.ceil(num_cols * 0.125))
+
+    # average number of pixels should be height
+    for i in range(0, peak_width):
+        profile[i] = height
+    # average number of pixels should be 10% of height
+    for i in range(peak_width, num_cols - peak_width):
+        profile[i] = height * .1
+    # average number of pixels should be height
+    for i in range(num_cols - peak_width, num_cols):
+        profile[i] = height
+
+    # normalize to between 0 and 1
+    profile *= 1.0 / profile.max()
+    return profile
+
+
+def row_profile(num_rows, width):
+    profile = np.zeros(num_rows)
+    # this is roughly equal to the width of the tape, which is where we will see a peak at the bottom of the image
+    peak_width = int(math.ceil(num_rows * 0.125))
+
+    # average number of pixels for first part should be 2*peak width, which is roughly 2*width of the tape
+    for i in range(0, num_rows - peak_width):
+        profile[i] = 2 * peak_width
+    # peak at the end that takes up the whole image width
+    for i in range(num_rows - peak_width, num_rows):
+        profile[i] = width
+
+    # normalize to between 0 and 1
+    profile *= 1.0 / profile.max()
+    return profile
+
+
+def profile_score(contour, binary):
+    """
+    Calculate a score based on the "profile" of the target, basically how closely its geometry matches with the expected geometry of the goal
+    :param contour:
+    :param binary:
+    :return:
+    """
+    bounding = cv2.boundingRect(contour)
+    pixels = np.zeros((binary.shape[0], binary.shape[1]))
+    cv2.drawContours(pixels, [contour], -1, 255, -1)
+    col_averages = np.mean(pixels, axis=0)[bounding[0]:bounding[0] + bounding[2]]
+    row_averages = np.mean(pixels, axis=1)[bounding[1]:bounding[1] + bounding[3]]
+    # normalize to between 0 and 1
+    col_averages *= 1.0 / col_averages.max()
+    row_averages *= 1.0 / row_averages.max()
+
+    col_diff = np.subtract(col_averages, col_profile(col_averages.shape[0], bounding[2]))
+    row_diff = np.subtract(row_averages, row_profile(row_averages.shape[0], bounding[3]))
+
+    # average difference should be close to 0
+    avg_diff = np.mean([np.mean(col_diff), np.mean(row_diff)])
+    return 100 - (avg_diff * 50)
+
+
+def contour_filter(contour, min_score, binary):
     """
     Threshold for removing hulls from positive detection.
     :return: True if it is a good match, False if it was a bad match (false positive).
     """
-
     # filter out particles less than 1000px^2
     bounding = cv2.boundingRect(contour)
     bounding_area = bounding[2] * bounding[3]
@@ -79,6 +139,9 @@ def contour_filter(contour, min_score=95):
         return False
     moment = moment_score(contour)
     if moment < min_score:
+        return False
+    profile = profile_score(contour, binary)
+    if profile < min_score:
         return False
 
     return True
@@ -110,7 +173,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
 
     # filter out so only left with good contours
     original_count = len(contours)
-    filtered_contours = filter(contour_filter, contours)
+    filtered_contours = [x for x in contours if contour_filter(contour=x, min_score=95, binary=bin)]
     print 'contour filtered ', original_count, ' to ', len(filtered_contours)
     polys = map(lambda contour: cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True), filtered_contours)
 

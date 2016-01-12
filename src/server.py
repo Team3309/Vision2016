@@ -55,12 +55,12 @@ image_count = 0
 
 
 def get_image():
-    # img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/29.jpg', cv2.IMREAD_COLOR)
-    global image_count
-    path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
-    print(path)
-    img = cv2.imread(path, cv2.IMREAD_COLOR)
-    image_count = (image_count + 1) % 350
+    img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/253.jpg', cv2.IMREAD_COLOR)
+    # global image_count
+    # path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
+    # print(path)
+    # img = cv2.imread(path, cv2.IMREAD_COLOR)
+    # image_count = (image_count + 1) % 350
     return img
 
 
