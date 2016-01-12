@@ -10,11 +10,6 @@ min_size = 1000
 
 
 def aspect_ratio_score(contour):
-    """
-    Give a score to a convex hull based on how likely it is to be a top goal.
-    :param hull: convex hull to test
-    :return: Score based on the ratio of side lengths and a minimum area
-    """
     rect = cv2.minAreaRect(contour)
     width = rect[1][0]
     height = rect[1][1]
@@ -30,13 +25,6 @@ def aspect_ratio_score(contour):
 
 
 def side_score(contour):
-    """
-    Give a score for a contour based on how likely it is to be a high goal
-    :param contour:
-    :return:
-    """
-    if cv2.contourArea(contour) < min_size:
-        return 0
     approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
     # the goal marker has 8 sides
     side_count = len(approx)
