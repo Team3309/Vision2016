@@ -98,7 +98,8 @@ def row_profile(num_rows, width):
 
 def profile_score(contour, binary):
     """
-    Calculate a score based on the "profile" of the target, basically how closely its geometry matches with the expected geometry of the goal
+    Calculate a score based on the "profile" of the target, basically how closely its geometry matches with the expected
+    geometry of the goal
     :param contour:
     :param binary:
     :return:
