@@ -190,13 +190,13 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     cv2.line(img, (int(imwidth / 2), 0), (int(imwidth / 2), int(imheight)), (255, 255, 255), 5)
     cv2.line(img, (0, int(imheight / 2)), (int(imwidth), int(imheight / 2)), (255, 255, 255), 5)
     # aiming reticle
-    cv2.circle(img, (int(imwidth / 2), int(imheight / 2)), 100, (255, 255, 255), 5)
+    cv2.circle(img, (int(imwidth / 2), int(imheight / 2)), 50, (255, 255, 255), 5)
 
     # draw dots on the center of each target
     for rect in original_rects:  # use original_rects so we don't have to recalculate image coords
         x = rect[0] + (rect[2] / 2)
         y = rect[1]
-        cv2.circle(img, (x, y), 20, (0, 0, 255), -1)
+        cv2.circle(img, (x, y), 10, (0, 0, 255), -1)
 
     output_images['result'] = img
 
