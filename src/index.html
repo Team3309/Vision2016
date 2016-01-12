@@ -76,8 +76,15 @@
                     for (var i = 0; i < targets.length; i++) {
                         var target = targets[i];
                         ctx.beginPath();
-                        var x = ((target.pos.x + 1) / 2) * width;
-                        var y = -((target.pos.y - 1) / 2) * height;
+                        var x = target.pos.x;
+                        x += 1; //range 0-2
+                        x /= 2; //range 0-1
+                        x *= width; //final coordinates
+                        var y = target.pos.y;
+                        y *= -1; //range -1 top to 1 bottom
+                        y += 1; //range 0-2
+                        y /= 2; //range 0-1
+                        y *= height; //final coordinates
                         ctx.arc(x, y, 5, 0, 2 * Math.PI);
                         ctx.fill();
                     }

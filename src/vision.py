@@ -182,8 +182,12 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     imheight, imwidth, _ = img.shape
     imheight = float(imheight)
     imwidth = float(imwidth)
-    rects = map(lambda rect: (float(rect[0] / imwidth), float(rect[1] / imheight), rect[2], rect[3]), original_rects)
-    rects = map(lambda rect: ((rect[0] * 2) - 1, -(rect[1] * 2) + 1, rect[2], rect[3]), rects)
+    # convert to horizontally centered coordinates
+    rects = map(lambda rect: (rect[0] + rect[2] / 2, rect[1], rect[2], rect[3]), original_rects)
+    # convert to targeting coordinate system
+    rects = map(lambda rect: (rect[0] - (imwidth / 2), rect[1] - (imheight / 2), rect[2], rect[3]), rects)
+    rects = map(lambda rect: (rect[0] / (imwidth / 2), rect[1] / (imheight / 2), rect[2], rect[3]), rects)
+    rects = map(lambda rect: (rect[0], -rect[1], rect[2], rect[3]), rects)
 
     # draw targeting coordinate system on top of the result image
     # axes
