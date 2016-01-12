@@ -216,30 +216,3 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
                   rects)
 
     return targets
-
-
-def nothing(x):
-    pass
-
-
-if __name__ == '__main__':
-    # cv2.namedWindow('bin')
-    # cv2.createTrackbar('min', 'bin', 0, 255, nothing)
-    # cv2.createTrackbar('max', 'bin', 0, 255, nothing)
-
-    img = cv2.imread('/Users/vmagro/Desktop/tower.png', cv2.IMREAD_COLOR)
-    # cv2.imshow('raw', img)
-
-    # while True:
-    # find(img, val_min=cv2.getTrackbarPos('min', 'bin'), val_max=cv2.getTrackbarPos('max', 'bin'))
-    #     print(cv2.getTrackbarPos('min', 'bin'), cv2.getTrackbarPos('max', 'bin'))
-    #     cv2.waitKey(1)
-
-    output_images = {}
-    rects = find(img, output_images=output_images)
-    cv2.imshow('bin', output_images['bin'])
-
-    cv2.imshow('result', output_images['result'])
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
