@@ -55,12 +55,12 @@ image_count = 0
 
 
 def get_image():
-    img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/253.jpg', cv2.IMREAD_COLOR)
-    # global image_count
-    # path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
-    # print(path)
-    # img = cv2.imread(path, cv2.IMREAD_COLOR)
-    # image_count = (image_count + 1) % 350
+    # img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/84.jpg', cv2.IMREAD_COLOR)
+    global image_count
+    path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
+    print(path)
+    img = cv2.imread(path, cv2.IMREAD_COLOR)
+    image_count = (image_count + 1) % 350
     return img
 
 
@@ -101,26 +101,50 @@ def targets_route():
     return Response(json.dumps(targets), mimetype='application/json')
 
 
+def raw_generator():
+    while True:
+        _, frame = cv2.imencode('.jpg', state['img'])
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
+        time.sleep(0.33)
+
+
+def bin_generator():
+    while True:
+        _, frame = cv2.imencode('.jpg', state['output_images']['bin'])
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
+        time.sleep(0.33)
+
+
+def result_generator():
+    while True:
+        _, frame = cv2.imencode('.jpg', state['output_images']['result'])
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
+        time.sleep(0.33)
+
+
 @app.route('/image')
 def image_route():
-    _, jpeg = cv2.imencode('.jpg', state['img'])
-    return Response(jpeg.tobytes(), mimetype='image/jpeg')
+    return Response(raw_generator(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route('/result')
 def result_image_route():
-    _, jpeg = cv2.imencode('.jpg', state['output_images']['result'])
-    return Response(jpeg.tobytes(), mimetype='image/jpeg')
+    return Response(result_generator(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route('/binary')
 def bin_image_route():
-    _, jpeg = cv2.imencode('.jpg', state['output_images']['bin'])
-    return Response(jpeg.tobytes(), mimetype='image/jpeg')
+    return Response(bin_generator(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 if __name__ == "__main__":
     t = threading.Thread(target=worker)
     t.daemon = True
     t.start()
-    app.run()
+    app.run(host='0.0.0.0', debug=True, threaded=True)

@@ -56,9 +56,9 @@
             // refresh images at 10fps
             setInterval(function () {
                 var d = new Date();
-                $('#image').attr('src', '/image?' + d.getTime());
-                $('#binary').attr('src', '/binary?' + d.getTime());
-                $('#result').attr('src', '/result?' + d.getTime());
+//                $('#image').attr('src', '/image?' + d.getTime());
+//                $('#binary').attr('src', '/binary?' + d.getTime());
+//                $('#result').attr('src', '/result?' + d.getTime());
 
                 var ctx = document.getElementById('target-frame').getContext('2d');
                 var width = 480, height = 360;
@@ -136,9 +136,9 @@
         </label>
     </form>
     <br>
-    <img id="image" src="/image"/>
-    <img id="binary" src="/binary"/> <br>
-    <img id="result" src="/result"/>
+    <img id="image" src="/image">
+    <img id="binary" src="/binary"> <br>
+    <img id="result" src="/result">
     <canvas id="target-frame" width="480" height="360">
     </canvas>
 </div>
