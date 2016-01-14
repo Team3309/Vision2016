@@ -1,5 +1,7 @@
 import json
 import os
+import signal
+import sys
 import threading
 import time
 
@@ -101,46 +103,33 @@ def targets_route():
     return Response(json.dumps(targets), mimetype='application/json')
 
 
-def raw_generator():
+def image_generator(name):
     while True:
-        _, frame = cv2.imencode('.jpg', state['img'])
+        _, frame = cv2.imencode('.jpg', state['output_images'][name])
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
         time.sleep(0.33)
 
 
-def bin_generator():
-    while True:
-        _, frame = cv2.imencode('.jpg', state['output_images']['bin'])
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
-        time.sleep(0.33)
-
-
-def result_generator():
-    while True:
-        _, frame = cv2.imencode('.jpg', state['output_images']['result'])
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
-        time.sleep(0.33)
-
-
-@app.route('/image')
-def image_route():
-    return Response(raw_generator(),
+@app.route('/binary')
+def binary_image_route():
+    return Response(image_generator('binary'),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route('/result')
 def result_image_route():
-    return Response(result_generator(),
+    return Response(image_generator('result'),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.route('/binary')
-def bin_image_route():
-    return Response(bin_generator(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+def shutdown_server():
+    print('Shutting down server')
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+    sys.exit(0)
 
 
 if __name__ == "__main__":
@@ -148,3 +137,5 @@ if __name__ == "__main__":
     t.daemon = True
     t.start()
     app.run(host='0.0.0.0', debug=True, threaded=True)
+    signal.signal(signal.SIGINT, shutdown_server)
+    signal.pause()

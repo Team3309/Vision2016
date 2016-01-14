@@ -155,10 +155,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
 
     output_images['bin'] = bin
 
-    canny = vision_common.canny(bin, 50)
-
-    # find contours after first processing it with Canny edge detection
-    _, contours, hierarchy = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    _, contours, hierarchy = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # filter out so only left with good contours
     original_count = len(contours)
