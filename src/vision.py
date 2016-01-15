@@ -185,6 +185,8 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     rects = map(lambda rect: (rect[0] - (imwidth / 2), rect[1] - (imheight / 2), rect[2], rect[3]), rects)
     rects = map(lambda rect: (rect[0] / (imwidth / 2), rect[1] / (imheight / 2), rect[2], rect[3]), rects)
     rects = map(lambda rect: (rect[0], -rect[1], rect[2], rect[3]), rects)
+    # also map the size to be a percentage of the image size
+    rects = map(lambda rect: (rect[0], rect[1], rect[2] / imwidth, rect[3] / imheight), rects)
 
     # draw targeting coordinate system on top of the result image
     # axes
