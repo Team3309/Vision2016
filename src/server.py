@@ -55,17 +55,19 @@ def save_config(config):
         outfile.close()
 
 
-image_count = 0
+video_cap = None
 
 
 def get_image():
+    # img = video_cap.read()
     img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/7.jpg', cv2.IMREAD_COLOR)
     # global image_count
     # path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
     # print(path)
     # img = cv2.imread(path, cv2.IMREAD_COLOR)
     # image_count = (image_count + 1) % 350
-    return img
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    return hsv
 
 
 state = {}
@@ -73,6 +75,10 @@ config = load_config()
 
 
 def worker():
+    # print('Opening camera')
+    # global video_cap
+    # video_cap = cv2.VideoCapture(0)
+    # print('Opened camera')
     while True:
         img = get_image()
         state['img'] = img
@@ -138,9 +144,8 @@ def shutdown_server():
 
 
 if __name__ == "__main__":
+    print("main init")
     t = threading.Thread(target=worker)
     t.daemon = True
     t.start()
-    app.run(host='0.0.0.0', debug=True, threaded=True)
-    signal.signal(signal.SIGINT, shutdown_server)
-    signal.pause()
+    app.run(host='0.0.0.0', debug=False, threaded=True)
