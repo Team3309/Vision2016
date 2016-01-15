@@ -173,10 +173,12 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     print 'contour filtered ', original_count, ' to ', len(filtered_contours)
     polys = map(lambda contour: cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True), filtered_contours)
 
+    # convert img back to bgr so it looks good when displayed
+    img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
     # draw pink lines on all contours
     # cv2.drawContours(img, contours, -1, (203, 192, 255), -1)
-    # draw green outlines so we know it actually detected it
-    cv2.drawContours(img, polys, -1, (255, 0, 0), 2)
+    # draw outlines so we know it actually detected it
+    cv2.drawContours(img, polys, -1, (0, 0, 255), 2)
 
     # draw scores on the hulls
     # for hull in hulls:
