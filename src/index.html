@@ -73,6 +73,7 @@
 
                     var originalFill = ctx.fillStyle;
                     ctx.fillStyle = '#ff0000';
+                    ctx.font = "20px Arial";
                     for (var i = 0; i < targets.length; i++) {
                         var target = targets[i];
                         ctx.beginPath();
@@ -87,6 +88,8 @@
                         y *= height; //final coordinates
                         ctx.arc(x, y, 5, 0, 2 * Math.PI);
                         ctx.fill();
+                        ctx.fillStyle = '#000000';
+                        ctx.fillText(Math.round(target.distance) + 'in', x, y - 10)
                     }
                     ctx.fillStyle = originalFill;
                 });

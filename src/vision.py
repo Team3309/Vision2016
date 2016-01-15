@@ -1,3 +1,4 @@
+# coding=utf-8
 import math
 
 import cv2
@@ -18,8 +19,8 @@ def aspect_ratio_score(contour):
 
     # check to make sure the size is defined to prevent possible division by 0 error
     if width != 0 and height != 0:
-        # the target is 1ft8in wide by 1ft2in high, so ratio of width/height is 1.429
-        ratio_score = 100 - abs((width / height) - 1.429)
+        # the target is 1ft8in wide by 1ft2in high, so ratio of width/height is 20/14
+        ratio_score = 100 - abs((width / height) - (20 / 14))
 
     return ratio_score
 
@@ -136,6 +137,15 @@ def contour_filter(contour, min_score, binary):
     return True
 
 
+def target_distance(target):
+    target_inches = 20  # 1ft8in
+    fov = math.radians(37.4)
+    # d = Tft*FOVpixel/(2*Tpixel*tanΘ)
+    # can ignore pixels here because width is normalized to be [0,1] in terms of percentage of the image
+    dist_inches = target_inches * 1 / (2 * target['size']['width'] * math.tan(fov))
+    return dist_inches
+
+
 def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_images):
     """
     Detect direction markers. These are the orange markers on the bottom of the pool that point ot the next objective.
@@ -205,5 +215,8 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
 
     targets = map(lambda rect: {'pos': {'x': rect[0], 'y': rect[1]}, 'size': {'width': rect[2], 'height': rect[3]}},
                   rects)
+
+    for target in targets:
+        target['distance'] = target_distance(target)
 
     return targets
