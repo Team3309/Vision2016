@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import json
 import os
-import signal
 import sys
 import threading
-import time
 
 import cv2
 from flask import Flask, Response, request, jsonify
@@ -21,11 +19,6 @@ def root_dir():
 def get_file(filename):
     try:
         src = os.path.join(root_dir(), filename)
-        # Figure out how flask returns static files
-        # Tried:
-        # - render_template
-        # - send_file
-        # This should not be so non-obvious
         return open(src).read()
     except IOError as exc:
         return str(exc)
@@ -55,43 +48,8 @@ def save_config(config):
         outfile.close()
 
 
-video_cap = None
-
-
-def get_image():
-    # img = video_cap.read()
-    img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/7.jpg', cv2.IMREAD_COLOR)
-    # global image_count
-    # path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
-    # print(path)
-    # img = cv2.imread(path, cv2.IMREAD_COLOR)
-    # image_count = (image_count + 1) % 350
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    return hsv
-
-
 state = {}
 config = load_config()
-
-
-def worker():
-    # print('Opening camera')
-    # global video_cap
-    # video_cap = cv2.VideoCapture(0)
-    # print('Opened camera')
-    while True:
-        img = get_image()
-        state['img'] = img
-        args = config.copy()
-        args['img'] = img
-        args['output_images'] = {}
-
-        targets = vision.find(**args)
-        state['targets'] = targets
-        state['output_images'] = args['output_images']
-        # 30fps
-        time.sleep(0.33)
-    return
 
 
 @app.route('/config', methods=['GET', 'POST'])
@@ -105,21 +63,31 @@ def config_route():
         return jsonify(**config)
 
 
+new_data_lock = threading.RLock()
+new_data_condition = threading.Condition(new_data_lock)
+
+
 @app.route('/targets')
 def targets_route():
-    if state is not None and 'targets' in state:
+    try:
+        new_data_condition.acquire()
+        new_data_condition.wait()
         targets = state['targets']
         return Response(json.dumps(targets), mimetype='application/json')
-    else:
-        return Response("[]", mimetype='application/json')
+    finally:
+        new_data_condition.release()
 
 
 def image_generator(name):
     while True:
-        _, frame = cv2.imencode('.jpg', state['output_images'][name])
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
-        time.sleep(0.33)
+        try:
+            new_data_condition.acquire()
+            new_data_condition.wait()
+            _, frame = cv2.imencode('.jpg', state['output_images'][name])
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
+        finally:
+            new_data_condition.release()
 
 
 @app.route('/binary')
@@ -134,6 +102,10 @@ def result_image_route():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
+def start_server():
+    app.run(host='0.0.0.0', debug=False, threaded=True)
+
+
 def shutdown_server():
     print('Shutting down server')
     func = request.environ.get('werkzeug.server.shutdown')
@@ -145,7 +117,31 @@ def shutdown_server():
 
 if __name__ == "__main__":
     print("main init")
-    t = threading.Thread(target=worker)
-    t.daemon = True
-    t.start()
-    app.run(host='0.0.0.0', debug=False, threaded=True)
+    video_cap = cv2.VideoCapture(0)
+    thread = threading.Thread(target=start_server)
+    thread.daemon = True
+    thread.start()
+
+    capture = cv2.VideoCapture()
+    print('Opening camera')
+    capture.open(0)
+    print('Opened camera')
+    while True:
+        success, img = capture.read()
+        if not success:
+            print('Failed to get image from camera')
+            continue
+
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+        new_data_condition.acquire()
+        state['img'] = hsv
+        args = config.copy()
+        args['img'] = hsv
+        args['output_images'] = {}
+
+        targets = vision.find(**args)
+        state['targets'] = targets
+        state['output_images'] = args['output_images']
+        new_data_condition.notify_all()
+        new_data_condition.release()
