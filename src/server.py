@@ -43,13 +43,14 @@ def root():
 
 
 def load_config():
-    config = json.loads(get_file('config.json'))
+    config = json.loads(get_file('config.json'))['target']
     return config
 
 
 def save_config(config):
     with open('config.json', 'w') as outfile:
-        outfile.write(json.dumps(config, indent=2, separators=(',', ': ')))
+        outconfig = {'target': config}
+        outfile.write(json.dumps(outconfig, indent=2, separators=(',', ': ')))
         outfile.close()
 
 
