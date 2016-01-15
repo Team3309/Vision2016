@@ -153,7 +153,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     dilate_kernel = np.ones((5, 5), np.uint8)
     bin = cv2.dilate(bin, dilate_kernel, iterations=1)
 
-    output_images['bin'] = bin
+    output_images['bin'] = np.copy(bin)
 
     _, contours, hierarchy = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -164,7 +164,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     polys = map(lambda contour: cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True), filtered_contours)
 
     # draw pink lines on all contours
-    cv2.drawContours(img, contours, -1, (203, 192, 255), -1)
+    # cv2.drawContours(img, contours, -1, (203, 192, 255), -1)
     # draw green outlines so we know it actually detected it
     cv2.drawContours(img, polys, -1, (255, 0, 0), 2)
 

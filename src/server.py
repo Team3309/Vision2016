@@ -58,12 +58,12 @@ image_count = 0
 
 
 def get_image():
-    # img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/84.jpg', cv2.IMREAD_COLOR)
-    global image_count
-    path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
-    print(path)
-    img = cv2.imread(path, cv2.IMREAD_COLOR)
-    image_count = (image_count + 1) % 350
+    img = cv2.imread('/Users/vmagro/Developer/frc/RealFullField/7.jpg', cv2.IMREAD_COLOR)
+    # global image_count
+    # path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_count) + '.jpg'
+    # print(path)
+    # img = cv2.imread(path, cv2.IMREAD_COLOR)
+    # image_count = (image_count + 1) % 350
     return img
 
 
@@ -100,8 +100,11 @@ def config_route():
 
 @app.route('/targets')
 def targets_route():
-    targets = state['targets']
-    return Response(json.dumps(targets), mimetype='application/json')
+    if state is not None and 'targets' in state:
+        targets = state['targets']
+        return Response(json.dumps(targets), mimetype='application/json')
+    else:
+        return Response("[]", mimetype='application/json')
 
 
 def image_generator(name):
@@ -114,7 +117,7 @@ def image_generator(name):
 
 @app.route('/binary')
 def binary_image_route():
-    return Response(image_generator('binary'),
+    return Response(image_generator('bin'),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
