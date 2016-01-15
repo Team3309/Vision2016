@@ -21,8 +21,9 @@ def check_image(name):
     expected_targets = expected_data['targets']
 
     img = cv2.imread('./img/' + name + '.jpg', cv2.IMREAD_COLOR)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     args = config.copy()
-    args['img'] = img
+    args['img'] = hsv
     args['output_images'] = {}
 
     actual_targets = find(**args)
