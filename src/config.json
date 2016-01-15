@@ -1,10 +1,10 @@
 {
   "target": {
-    "hue_max": 108,
-    "sat_min": 155,
+    "hue_max": 99,
+    "sat_min": 0,
     "sat_max": 255,
     "val_min": 122,
-    "hue_min": 0,
+    "hue_min": 76,
     "val_max": 198
   }
 }
