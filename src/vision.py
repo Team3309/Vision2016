@@ -110,6 +110,59 @@ def profile_score(contour, binary):
     return 100 - (avg_diff * 50)
 
 
+def sort_corners(corners):
+    """
+    Sorts a list of corners so that the top left corner is at index 0, top right at index 1 etc
+    :param corners:
+    :return:
+    """
+    center_y = 0
+    for corner in corners:
+        center_y += corner[0][1]
+
+    center_y /= len(corners)
+
+    top = []
+    bottom = []
+    for corner in corners:
+        if corner[0][1] < center_y:
+            top.append(corner[0])
+        else:
+            bottom.append(corner[0])
+
+    tl = top[1] if top[0][0] > top[1][0] else top[0]
+    tr = top[0] if top[0][0] > top[1][0] else top[1]
+    bl = bottom[1] if bottom[0][0] > bottom[1][0] else bottom[0]
+    br = bottom[0] if bottom[0][0] > bottom[1][0] else bottom[1]
+    return np.array([tl, tr, bl, br], np.float32)
+
+
+def fix_target_perspective(contour, bin_shape):
+    """
+    Fixes the perspective so it always looks as if we are viewing it head-on
+    :param contour:
+    :param bin_shape: numpy shape of the binary image matrix
+    :return: a new version of contour with corrected perspective, a new binary image to test against,
+    """
+    hull = cv2.convexHull(contour)
+    poly = cv2.approxPolyDP(hull, 0.01 * cv2.arcLength(hull, True), True)
+    corners = sort_corners(poly)
+    before_warp = np.zeros(bin_shape)
+    cv2.drawContours(before_warp, [contour], -1, 255, -1)
+
+    # get a perspective transformation so that the target is warped as if it was viewed head on
+    shape = (400, 280)
+    warp = cv2.getPerspectiveTransform(corners, np.array([(0, 0), (shape[0], 0), (0, shape[1]), (shape[0], shape[1])],
+                                                         np.float32))
+    fixed_perspective = cv2.warpPerspective(before_warp, warp, shape)
+    fixed_perspective = fixed_perspective.astype(np.uint8)
+
+    _, contours, _ = cv2.findContours(fixed_perspective, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    new_contour = contours[0]
+
+    return new_contour, fixed_perspective
+
+
 def contour_filter(contour, min_score, binary):
     """
     Threshold for removing hulls from positive detection.
@@ -121,6 +174,8 @@ def contour_filter(contour, min_score, binary):
     if bounding_area < 1000:
         return False
 
+    contour, new_binary = fix_target_perspective(contour, binary.shape)
+
     aspect = aspect_ratio_score(contour)
     if aspect < min_score or math.isnan(aspect):
         return False
@@ -130,11 +185,24 @@ def contour_filter(contour, min_score, binary):
     moment = moment_score(contour)
     if moment < min_score:
         return False
-    profile = profile_score(contour, binary)
+    profile = profile_score(contour, new_binary)
     if profile < min_score:
         return False
 
     return True
+
+
+def target_center(contour):
+    """
+    Calculate center point, the midpoint between the upper two corners
+    :param contour:
+    :return:
+    """
+    hull = cv2.convexHull(contour)
+    poly = cv2.approxPolyDP(hull, 0.01 * cv2.arcLength(hull, True), True)
+    corners = sort_corners(poly)
+    top_midpoint = ((corners[0][0] + corners[1][0]) / 2, (corners[0][1] + corners[1][1]) / 2)
+    return top_midpoint
 
 
 def target_distance(target):
