@@ -30,11 +30,8 @@ def coverage_score(contour):
     bounding_size = cv2.boundingRect(contour)
     bounding_area = bounding_size[2] * bounding_size[3]
     # ideal area is 1/3
-    denominator = contour_area - (1 / 3)
-    if denominator == 0:
-        return 100
-    else:
-        return 100 - (bounding_area / denominator)
+    diff = (bounding_area / contour_area) - (1.0 / 3.0)
+    return 100 - (diff * 5)
 
 
 def moment_score(contour):
@@ -148,15 +145,16 @@ def fix_target_perspective(contour, bin_shape):
     :return: a new version of contour with corrected perspective, a new binary image to test against,
     """
     hull = cv2.convexHull(contour)
-    poly = cv2.approxPolyDP(hull, 0.01 * cv2.arcLength(hull, True), True)
-    corners = sort_corners(poly)
-    before_warp = np.zeros(bin_shape)
+    hull_poly = cv2.approxPolyDP(hull, 0.1 * cv2.arcLength(hull, True), True)
+    before_warp = np.zeros(bin_shape, np.uint8)
     cv2.drawContours(before_warp, [contour], -1, 255, -1)
+
+    corners = sort_corners(hull_poly)
 
     # get a perspective transformation so that the target is warped as if it was viewed head on
     shape = (400, 280)
-    warp = cv2.getPerspectiveTransform(corners, np.array([(0, 0), (shape[0], 0), (0, shape[1]), (shape[0], shape[1])],
-                                                         np.float32))
+    dest_corners = np.array([(0, 0), (shape[0], 0), (0, shape[1]), (shape[0], shape[1])], np.float32)
+    warp = cv2.getPerspectiveTransform(corners, dest_corners)
     fixed_perspective = cv2.warpPerspective(before_warp, warp, shape)
     fixed_perspective = fixed_perspective.astype(np.uint8)
 
@@ -199,7 +197,7 @@ def target_center(contour):
     :return:
     """
     hull = cv2.convexHull(contour)
-    poly = cv2.approxPolyDP(hull, 0.01 * cv2.arcLength(hull, True), True)
+    poly = cv2.approxPolyDP(hull, 0.1 * cv2.arcLength(hull, True), True)
     corners = sort_corners(poly)
     top_midpoint = ((corners[0][0] + corners[1][0]) / 2, (corners[0][1] + corners[1][1]) / 2)
     return top_midpoint
