@@ -108,6 +108,9 @@ def sort_corners(corners):
     :param corners:
     :return:
     """
+    if len(corners) != 4:
+        raise ValueError('Incorrect number of corners')
+
     center_y = 0
     for corner in corners:
         center_y += corner[0][1]
@@ -145,11 +148,14 @@ def fix_target_perspective(contour, bin_shape):
     :return: a new version of contour with corrected perspective, a new binary image to test against,
     """
     hull = cv2.convexHull(contour)
-    hull_poly = cv2.approxPolyDP(hull, 0.1 * cv2.arcLength(hull, True), True)
+    hull_poly = cv2.approxPolyDP(hull, 0.05 * cv2.arcLength(hull, True), True)
     before_warp = np.zeros(bin_shape, np.uint8)
     cv2.drawContours(before_warp, [contour], -1, 255, -1)
 
-    corners = sort_corners(hull_poly)
+    try:
+        corners = sort_corners(hull_poly)
+    except ValueError:
+        raise ValueError('Failed to detect rectangle')
 
     # get a perspective transformation so that the target is warped as if it was viewed head on
     shape = (400, 280)
@@ -175,7 +181,10 @@ def contour_filter(contour, min_score, binary):
     if bounding_area < 1000:
         return False
 
-    contour, new_binary = fix_target_perspective(contour, binary.shape)
+    try:
+        contour, new_binary = fix_target_perspective(contour, binary.shape)
+    except ValueError:
+        return False
 
     scores = np.array([
         aspect_ratio_score(contour),
@@ -197,7 +206,7 @@ def target_center(contour):
     :return:
     """
     hull = cv2.convexHull(contour)
-    poly = cv2.approxPolyDP(hull, 0.1 * cv2.arcLength(hull, True), True)
+    poly = cv2.approxPolyDP(hull, 0.02 * cv2.arcLength(hull, True), True)
     corners = sort_corners(poly)
     top_midpoint = ((corners[0][0] + corners[1][0]) / 2, (corners[0][1] + corners[1][1]) / 2)
     return top_midpoint
