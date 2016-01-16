@@ -102,6 +102,17 @@ def profile_score(contour, binary):
     return 100 - (avg_diff * 50)
 
 
+def get_corners(contour):
+    """
+    Given a contour that should have a rectangular convex hull, produce a sorted list of corners for the bounding rectangle
+    :param contour:
+    :return:
+    """
+    hull = cv2.convexHull(contour)
+    hull_poly = cv2.approxPolyDP(hull, 0.05 * cv2.arcLength(hull, True), True)
+    return sort_corners(hull_poly)
+
+
 def sort_corners(corners):
     """
     Sorts a list of corners so that the top left corner is at index 0, top right at index 1 etc
@@ -132,13 +143,11 @@ def fix_target_perspective(contour, bin_shape):
     :param bin_shape: numpy shape of the binary image matrix
     :return: a new version of contour with corrected perspective, a new binary image to test against,
     """
-    hull = cv2.convexHull(contour)
-    hull_poly = cv2.approxPolyDP(hull, 0.05 * cv2.arcLength(hull, True), True)
     before_warp = np.zeros(bin_shape, np.uint8)
     cv2.drawContours(before_warp, [contour], -1, 255, -1)
 
     try:
-        corners = sort_corners(hull_poly)
+        corners = get_corners(contour)
 
         # get a perspective transformation so that the target is warped as if it was viewed head on
         shape = (400, 280)
@@ -191,9 +200,7 @@ def target_center(contour):
     :param contour:
     :return:
     """
-    hull = cv2.convexHull(contour)
-    poly = cv2.approxPolyDP(hull, 0.1 * cv2.arcLength(hull, True), True)
-    corners = sort_corners(poly)
+    corners = get_corners(contour)
     top_midpoint = ((corners[0][0] + corners[1][0]) / 2, (corners[0][1] + corners[1][1]) / 2)
     return top_midpoint
 
