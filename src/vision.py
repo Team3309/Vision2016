@@ -25,21 +25,16 @@ def aspect_ratio_score(contour):
     return ratio_score
 
 
-def side_score(contour):
-    approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
-    # the goal marker has 8 sides
-    side_count = len(approx)
-    if side_count == 8:
-        return 100
-    return 0
-
-
 def coverage_score(contour):
     contour_area = cv2.contourArea(contour)
     bounding_size = cv2.boundingRect(contour)
     bounding_area = bounding_size[2] * bounding_size[3]
     # ideal area is 1/3
-    return 100 - (bounding_area / contour_area - (1 / 3))
+    denominator = contour_area - (1 / 3)
+    if denominator == 0:
+        return 100
+    else:
+        return 100 - (bounding_area / denominator)
 
 
 def moment_score(contour):
@@ -124,11 +119,19 @@ def sort_corners(corners):
 
     top = []
     bottom = []
+    center = []
     for corner in corners:
         if corner[0][1] < center_y:
             top.append(corner[0])
-        else:
+        elif corner[0][1] > center_y:
             bottom.append(corner[0])
+        else:
+            center.append(corner[0])
+    for point in center:
+        if len(top) == 1:
+            top.append(point)
+        elif len(bottom) == 1:
+            bottom.append(point)
 
     tl = top[1] if top[0][0] > top[1][0] else top[0]
     tr = top[0] if top[0][0] > top[1][0] else top[1]
@@ -176,17 +179,14 @@ def contour_filter(contour, min_score, binary):
 
     contour, new_binary = fix_target_perspective(contour, binary.shape)
 
-    aspect = aspect_ratio_score(contour)
-    if aspect < min_score or math.isnan(aspect):
-        return False
-    coverage = coverage_score(contour)
-    if coverage < min_score or math.isnan(coverage):
-        return False
-    moment = moment_score(contour)
-    if moment < min_score:
-        return False
-    profile = profile_score(contour, new_binary)
-    if profile < min_score:
+    scores = np.array([
+        aspect_ratio_score(contour),
+        coverage_score(contour),
+        moment_score(contour),
+        profile_score(contour, new_binary)
+    ])
+
+    if scores.mean() < min_score:
         return False
 
     return True
