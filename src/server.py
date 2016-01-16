@@ -9,6 +9,8 @@ from flask import Flask, Response, request, jsonify
 
 import vision
 
+app = Flask(__name__)
+
 
 def root_dir():
     return os.path.abspath(os.path.dirname(__file__))
@@ -100,7 +102,6 @@ def result_image_route():
 
 
 def start_server():
-    app = Flask(__name__)
     app.run(host='0.0.0.0', debug=False, threaded=True)
 
 
@@ -138,8 +139,8 @@ def image_loop():
     image_counter = 0
     while True:
         # path = '/Users/vmagro/Developer/frc/RealFullField/11.jpg'
-        path = '/Users/vmagro/Developer/frc/Vision2016/test/img/11.jpg'
-        # path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_counter) + '.jpg'
+        # path = '/Users/vmagro/Developer/frc/Vision2016/test/img/11.jpg'
+        path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_counter) + '.jpg'
         print(path)
         img = cv2.imread(path, cv2.IMREAD_COLOR)
         image_counter = (image_counter + 1) % 350
