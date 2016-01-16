@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import json
 import os
-import sys
 import threading
+import time
 
 import cv2
 from flask import Flask, Response, request, jsonify
@@ -106,22 +106,23 @@ def start_server():
     app.run(host='0.0.0.0', debug=False, threaded=True)
 
 
-def shutdown_server():
-    print('Shutting down server')
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
-    sys.exit(0)
+def handle_image(img):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    new_data_condition.acquire()
+    state['img'] = hsv
+    args = config.copy()
+    args['img'] = hsv
+    args['output_images'] = {}
+
+    targets = vision.find(**args)
+    state['targets'] = targets
+    state['output_images'] = args['output_images']
+    new_data_condition.notify_all()
+    new_data_condition.release()
 
 
-if __name__ == "__main__":
-    print("main init")
-    video_cap = cv2.VideoCapture(0)
-    thread = threading.Thread(target=start_server)
-    thread.daemon = True
-    thread.start()
-
+def camera_loop():
     capture = cv2.VideoCapture()
     print('Opening camera')
     capture.open(0)
@@ -132,16 +133,28 @@ if __name__ == "__main__":
             print('Failed to get image from camera')
             continue
 
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        handle_image(img)
 
-        new_data_condition.acquire()
-        state['img'] = hsv
-        args = config.copy()
-        args['img'] = hsv
-        args['output_images'] = {}
 
-        targets = vision.find(**args)
-        state['targets'] = targets
-        state['output_images'] = args['output_images']
-        new_data_condition.notify_all()
-        new_data_condition.release()
+def image_loop():
+    image_counter = 0
+    while True:
+        # path = '/Users/vmagro/Developer/frc/RealFullField/78.jpg'
+        path = '/Users/vmagro/Developer/frc/Vision2016/test/img/78.jpg'
+        # path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_counter) + '.jpg'
+        print(path)
+        img = cv2.imread(path, cv2.IMREAD_COLOR)
+        image_counter = (image_counter + 1) % 350
+
+        handle_image(img)
+        time.sleep(0.5)  # slow down so its visible
+
+
+if __name__ == "__main__":
+    print("main init")
+    thread = threading.Thread(target=start_server)
+    thread.daemon = True
+    thread.start()
+
+    # camera_loop()
+    image_loop()

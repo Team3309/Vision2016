@@ -210,8 +210,29 @@ def target_distance(target):
     fov = math.radians(37.4)
     # d = Tft*FOVpixel/(2*Tpixel*tanΘ)
     # can ignore pixels here because width is normalized to be [0,1] in terms of percentage of the image
-    dist_inches = target_inches * 1 / (2 * target['size']['width'] * math.tan(fov))
+    dist_inches = target_inches * 1 / (2 * target[1][0] * math.tan(fov))
     return dist_inches
+
+
+def to_targeting_coords(target, imshape):
+    """
+    Convert to a targeting coordinate system of [-1, 1]
+    :param target:
+    :return:
+    """
+    imheight, imwidth, _ = imshape
+    imheight = float(imheight)
+    imwidth = float(imwidth)
+
+    (x, y), (width, height) = target
+    x -= imwidth / 2
+    x /= imwidth / 2
+    y -= imheight / 2
+    y /= imheight / 2
+    y *= -1
+    width /= imwidth
+    height /= imheight
+    return (x, y), (width, height)
 
 
 def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_images):
@@ -243,50 +264,41 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
 
     # convert img back to bgr so it looks good when displayed
     img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
-    # draw pink lines on all contours
-    # cv2.drawContours(img, contours, -1, (203, 192, 255), -1)
     # draw outlines so we know it actually detected it
     cv2.drawContours(img, polys, -1, (0, 0, 255), 2)
 
-    # draw scores on the hulls
-    # for hull in hulls:
-    #     center = cv2.minAreaRect(hull)[0]
-    #     score = str(hull_score(hull))
-    #     cv2.putText(img, score, center, cv2.FONT_HERSHEY_SIMPLEX, 4, (255, 0, 0), 1)
-
-    original_rects = map(lambda contour: cv2.boundingRect(contour), filtered_contours)
-    # convert to the targeting system of [-1, 1]
-    imheight, imwidth, _ = img.shape
-    imheight = float(imheight)
-    imwidth = float(imwidth)
-    # convert to horizontally centered coordinates
-    rects = map(lambda rect: (rect[0] + rect[2] / 2, rect[1], rect[2], rect[3]), original_rects)
-    # convert to targeting coordinate system
-    rects = map(lambda rect: (rect[0] - (imwidth / 2), rect[1] - (imheight / 2), rect[2], rect[3]), rects)
-    rects = map(lambda rect: (rect[0] / (imwidth / 2), rect[1] / (imheight / 2), rect[2], rect[3]), rects)
-    rects = map(lambda rect: (rect[0], -rect[1], rect[2], rect[3]), rects)
-    # also map the size to be a percentage of the image size
-    rects = map(lambda rect: (rect[0], rect[1], rect[2] / imwidth, rect[3] / imheight), rects)
+    original_targets = [(target_center(contour), cv2.boundingRect(contour)) for contour in filtered_contours]
+    original_targets = [(center, (rect[2], rect[3])) for (center, rect) in original_targets]
+    # original_targets is now a list of (x, y) and (width, height)
+    targets = [to_targeting_coords(target, img.shape) for target in original_targets]
 
     # draw targeting coordinate system on top of the result image
     # axes
+    imheight, imwidth, _ = img.shape
     cv2.line(img, (int(imwidth / 2), 0), (int(imwidth / 2), int(imheight)), (255, 255, 255), 5)
     cv2.line(img, (0, int(imheight / 2)), (int(imwidth), int(imheight / 2)), (255, 255, 255), 5)
     # aiming reticle
     cv2.circle(img, (int(imwidth / 2), int(imheight / 2)), 50, (255, 255, 255), 5)
 
     # draw dots on the center of each target
-    for rect in original_rects:  # use original_rects so we don't have to recalculate image coords
-        x = rect[0] + (rect[2] / 2)
-        y = rect[1]
+    for target in original_targets:  # use original_targets so we don't have to recalculate image coords
+        x = int(target[0][0])
+        y = int(target[0][1])
         cv2.circle(img, (x, y), 10, (0, 0, 255), -1)
 
     output_images['result'] = img
 
-    targets = map(lambda rect: {'pos': {'x': rect[0], 'y': rect[1]}, 'size': {'width': rect[2], 'height': rect[3]}},
-                  rects)
+    output_targets = [
+        {
+            'pos': {
+                'x': target[0][0],
+                'y': target[0][1]
+            },
+            'size': {
+                'width': target[1][0],
+                'height': target[1][1]
+            },
+            'distance': target_distance(target)
+        } for target in targets]
 
-    for target in targets:
-        target['distance'] = target_distance(target)
-
-    return targets
+    return output_targets
