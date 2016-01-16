@@ -3,13 +3,14 @@
   "targets": [
     {
       "pos": {
-        "x": -0.22,
-        "y": 0.6
+        "x": 0.35,
+        "y": 0.65
       },
       "size": {
-        "width": 0.26,
+        "width": 0.1,
         "height": 0.15
       }
     }
   ]
 }
+'Failed to detect rectangle to fix perspective')
