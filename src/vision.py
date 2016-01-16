@@ -111,27 +111,12 @@ def sort_corners(corners):
     if len(corners) != 4:
         raise ValueError('Incorrect number of corners')
 
-    center_y = 0
-    for corner in corners:
-        center_y += corner[0][1]
+    corners = [c[0] for c in corners]
 
-    center_y /= len(corners)
-
-    top = []
-    bottom = []
-    center = []
-    for corner in corners:
-        if corner[0][1] < center_y:
-            top.append(corner[0])
-        elif corner[0][1] > center_y:
-            bottom.append(corner[0])
-        else:
-            center.append(corner[0])
-    for point in center:
-        if len(top) == 1:
-            top.append(point)
-        elif len(bottom) == 1:
-            bottom.append(point)
+    # sort corners by y value, pick the low 2 for top and high 2 for bottom
+    corners = sorted(corners, key=lambda c: c[1])
+    top = corners[:2]
+    bottom = corners[2:]
 
     tl = top[1] if top[0][0] > top[1][0] else top[0]
     tr = top[0] if top[0][0] > top[1][0] else top[1]
@@ -154,20 +139,21 @@ def fix_target_perspective(contour, bin_shape):
 
     try:
         corners = sort_corners(hull_poly)
+
+        # get a perspective transformation so that the target is warped as if it was viewed head on
+        shape = (400, 280)
+        dest_corners = np.array([(0, 0), (shape[0], 0), (0, shape[1]), (shape[0], shape[1])], np.float32)
+        warp = cv2.getPerspectiveTransform(corners, dest_corners)
+        fixed_perspective = cv2.warpPerspective(before_warp, warp, shape)
+        fixed_perspective = fixed_perspective.astype(np.uint8)
+
+        _, contours, _ = cv2.findContours(fixed_perspective, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        new_contour = contours[0]
+
+        return new_contour, fixed_perspective
+
     except ValueError:
         raise ValueError('Failed to detect rectangle')
-
-    # get a perspective transformation so that the target is warped as if it was viewed head on
-    shape = (400, 280)
-    dest_corners = np.array([(0, 0), (shape[0], 0), (0, shape[1]), (shape[0], shape[1])], np.float32)
-    warp = cv2.getPerspectiveTransform(corners, dest_corners)
-    fixed_perspective = cv2.warpPerspective(before_warp, warp, shape)
-    fixed_perspective = fixed_perspective.astype(np.uint8)
-
-    _, contours, _ = cv2.findContours(fixed_perspective, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    new_contour = contours[0]
-
-    return new_contour, fixed_perspective
 
 
 def contour_filter(contour, min_score, binary):
@@ -206,7 +192,7 @@ def target_center(contour):
     :return:
     """
     hull = cv2.convexHull(contour)
-    poly = cv2.approxPolyDP(hull, 0.02 * cv2.arcLength(hull, True), True)
+    poly = cv2.approxPolyDP(hull, 0.1 * cv2.arcLength(hull, True), True)
     corners = sort_corners(poly)
     top_midpoint = ((corners[0][0] + corners[1][0]) / 2, (corners[0][1] + corners[1][1]) / 2)
     return top_midpoint
