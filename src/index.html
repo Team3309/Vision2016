@@ -61,12 +61,9 @@
                 return feetStr + inchesStr;
             }
 
-            // refresh images at 10fps
+            // get target information on an interval and draw it onto the canvas
             setInterval(function () {
                 var d = new Date();
-//                $('#image').attr('src', '/image?' + d.getTime());
-//                $('#binary').attr('src', '/binary?' + d.getTime());
-//                $('#result').attr('src', '/result?' + d.getTime());
 
                 var ctx = document.getElementById('target-frame').getContext('2d');
                 var width = 480, height = 360;
