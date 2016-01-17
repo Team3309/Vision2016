@@ -175,7 +175,7 @@ def comm_loop():
 
             targets = state['targets']
             message = json.dumps(targets)
-            sock.sendto(message, ('localhost', 3309))
+            sock.sendto(message, ('roboRIO-3309-FRC.local', 3309))
         finally:
             new_data_condition.release()
 
