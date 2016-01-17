@@ -16,6 +16,7 @@
 
 import json
 import os
+import socket
 import threading
 import time
 
@@ -164,11 +165,30 @@ def image_loop():
         time.sleep(0.5)  # slow down so its visible
 
 
+def comm_loop():
+    sock = socket.socket(socket.AF_INET,  # Internet
+                         socket.SOCK_DGRAM)  # UDP
+    while True:
+        try:
+            new_data_condition.acquire()
+            new_data_condition.wait()
+
+            targets = state['targets']
+            message = json.dumps(targets)
+            sock.sendto(message, ('localhost', 3309))
+        finally:
+            new_data_condition.release()
+
+
 if __name__ == "__main__":
     print("main init")
-    thread = threading.Thread(target=start_server)
-    thread.daemon = True
-    thread.start()
+    server_thread = threading.Thread(target=start_server)
+    server_thread.daemon = True
+    server_thread.start()
+
+    comm_thread = threading.Thread(target=comm_loop)
+    comm_thread.daemon = True
+    comm_thread.start()
 
     # camera_loop()
     image_loop()
