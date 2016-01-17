@@ -53,6 +53,14 @@
                 });
             });
 
+            function distanceString(inches) {
+                var feet = Math.round(inches / 12);
+                var feetStr = feet > 0 ? feet + 'ft' : '';
+                inches = Math.round(inches % 12);
+                var inchesStr = inches > 0 ? inches + 'in' : '';
+                return feetStr + inchesStr;
+            }
+
             // refresh images at 10fps
             setInterval(function () {
                 var d = new Date();
@@ -72,10 +80,10 @@
                     ctx.stroke();
 
                     var originalFill = ctx.fillStyle;
-                    ctx.fillStyle = '#ff0000';
                     ctx.font = "20px Arial";
                     for (var i = 0; i < targets.length; i++) {
                         var target = targets[i];
+                        ctx.fillStyle = '#ff0000';
                         ctx.beginPath();
                         var x = target.pos.x;
                         x += 1; //range 0-2
@@ -89,7 +97,7 @@
                         ctx.arc(x, y, 5, 0, 2 * Math.PI);
                         ctx.fill();
                         ctx.fillStyle = '#000000';
-                        ctx.fillText(Math.round(target.distance) + 'in', x, y - 10)
+                        ctx.fillText(distanceString(target.distance), x, y + 15)
                     }
                     ctx.fillStyle = originalFill;
                 });
