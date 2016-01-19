@@ -188,7 +188,8 @@ def contour_filter(contour, min_score, binary):
     # filter out particles less than 1000px^2
     bounding = cv2.boundingRect(contour)
     bounding_area = bounding[2] * bounding[3]
-    if bounding_area < 1000:
+    contour_area = cv2.contourArea(contour)
+    if bounding_area < 1000 or contour_area < 1000:
         return False
 
     try:
