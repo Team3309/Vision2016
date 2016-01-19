@@ -21,9 +21,6 @@ import numpy as np
 
 import vision_util as vision_common
 
-# limit blobs to at least 1000px^2
-min_size = 1000
-
 
 def aspect_ratio_score(contour):
     rect = cv2.minAreaRect(contour)
@@ -283,11 +280,11 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     original_count = len(contours)
     filtered_contours = [x for x in contours if contour_filter(contour=x, min_score=95, binary=bin)]
     print 'contour filtered ', original_count, ' to ', len(filtered_contours)
-    polys = [cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True) for contour in filtered_contours]
 
     # convert img back to bgr so it looks good when displayed
     img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
     # draw outlines so we know it actually detected it
+    polys = [cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True) for contour in filtered_contours]
     cv2.drawContours(img, polys, -1, (0, 0, 255), 2)
 
     original_targets = [(target_center(contour), cv2.boundingRect(contour)) for contour in filtered_contours]
