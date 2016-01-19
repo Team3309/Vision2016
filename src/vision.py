@@ -253,9 +253,16 @@ def to_targeting_coords(target, imshape):
 
 def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_images):
     """
-    Detect direction markers. These are the orange markers on the bottom of the pool that point ot the next objective.
-    :param img: HSV image from the camera
-    :return: a list of tuples indicating the rectangles detected (center, width x height, angle)
+    Detect high goals in the input image
+    :param img: hsv input image
+    :param hue_min:
+    :param hue_max:
+    :param sat_min:
+    :param sat_max:
+    :param val_min:
+    :param val_max:
+    :param output_images: images that show the output of various stages of the detection process
+    :return: a list of the detected targets
     """
 
     img = np.copy(img)
