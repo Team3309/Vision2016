@@ -53,12 +53,11 @@ def root():
 
 
 def load_config():
-    return json.loads(get_file('config.json'))['target']
+    return json.loads(get_file('config.json'))
 
 
-def save_config(config):
+def save_config(outconfig):
     with open('config.json', 'w') as outfile:
-        outconfig = {'target': config}
         outfile.write(json.dumps(outconfig, indent=2, separators=(',', ': ')))
         outfile.close()
 
@@ -67,15 +66,14 @@ state = {}
 config = load_config()
 
 
-@app.route('/config', methods=['GET', 'POST'])
+@app.route('/target-config', methods=['GET', 'POST'])
 def config_route():
     if request.method == 'POST':
-        global config
-        config = dict((key, int(request.form.get(key))) for key in request.form.keys())
+        config['target'] = dict((key, int(request.form.get(key))) for key in request.form.keys())
         save_config(config)
-        return jsonify(**config)
+        return jsonify(**(config['target']))
     else:
-        return jsonify(**config)
+        return jsonify(**(config['target']))
 
 
 new_data_lock = threading.RLock()
@@ -87,7 +85,7 @@ def targets_route():
     try:
         new_data_condition.acquire()
         new_data_condition.wait()
-        targets = state['targets']
+        targets = state['target']
         return Response(json.dumps(targets), mimetype='application/json')
     finally:
         new_data_condition.release()
@@ -126,7 +124,7 @@ def handle_image(img):
 
     new_data_condition.acquire()
     state['img'] = hsv
-    args = config.copy()
+    args = config['target'].copy()
     args['img'] = hsv
     args['output_images'] = {}
 
@@ -175,7 +173,7 @@ def comm_loop():
 
             targets = state['targets']
             message = json.dumps(targets)
-            sock.sendto(message, ('roboRIO-3309-FRC.local', 3309))
+            sock.sendto(message, (config['destination'], 3309))
         finally:
             new_data_condition.release()
 

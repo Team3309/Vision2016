@@ -25,7 +25,7 @@
             });
 
             //load initial values
-            $.getJSON('/config', function (data) {
+            $.getJSON('/target-config', function (data) {
                 for (var key in data) {
                     if (data.hasOwnProperty(key)) {
                         $('#' + key).val(data[key]);
@@ -104,7 +104,7 @@
 </head>
 <body>
 <div class="controls">
-    <form id="config-form" action="/config" method="post">
+    <form id="config-form" action="/target-config" method="post">
         <label>
             Min Hue
             <input id="hue_min" type="range" min="0" max="255" name="hue_min"/>

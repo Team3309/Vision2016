@@ -1,4 +1,5 @@
 {
+  "destination": "localhost",
   "target": {
     "hue_max": 106,
     "sat_min": 32,
@@ -6,5 +7,6 @@
     "val_min": 79,
     "hue_min": 85,
     "val_max": 196
-  }
+  },
+  "log_directory": "/Users/vmagro/Desktop/vision-log/"
 }
