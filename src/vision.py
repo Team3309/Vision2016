@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import math
+import time
 
 import cv2
 import numpy as np
@@ -261,6 +262,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     :param output_images: images that show the output of various stages of the detection process
     :return: a list of the detected targets
     """
+    start_time = time.time()
 
     img = np.copy(img)
 
@@ -279,7 +281,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     # filter out so only left with good contours
     original_count = len(contours)
     filtered_contours = [x for x in contours if contour_filter(contour=x, min_score=95, binary=bin)]
-    print 'contour filtered ', original_count, ' to ', len(filtered_contours)
+    print 'contour filtered', original_count, 'to', len(filtered_contours)
 
     # convert img back to bgr so it looks good when displayed
     img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
@@ -320,5 +322,9 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
             },
             'distance': target_distance(target)
         } for target in targets]
+
+    elapsed_time = time.time() - start_time
+    elapsed_time_s = elapsed_time / 1000
+    print 'Processed in', elapsed_time, 'ms, max fps =', int(math.floor(1 / elapsed_time_s))
 
     return output_targets
