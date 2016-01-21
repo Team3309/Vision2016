@@ -43,8 +43,11 @@ def coverage_score(contour):
     bounding_size = cv2.boundingRect(contour)
     bounding_area = bounding_size[2] * bounding_size[3]
     # ideal area is 1/3
-    diff = (bounding_area / contour_area) - (1.0 / 3.0)
-    return 100 - (diff * 5)
+    if contour_area > 0:
+        diff = (bounding_area / contour_area) - (1.0 / 3.0)
+        return 100 - (diff * 5)
+
+    return 0
 
 
 def moment_score(contour):
