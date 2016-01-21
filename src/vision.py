@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import math
-import time
 
 import cv2
 import numpy as np
@@ -262,8 +261,6 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     :param output_images: images that show the output of various stages of the detection process
     :return: a list of the detected targets
     """
-    start_time = time.time()
-
     img = np.copy(img)
 
     bin = vision_common.hsv_threshold(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max)
@@ -322,9 +319,5 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
             },
             'distance': target_distance(target)
         } for target in targets]
-
-    elapsed_time = time.time() - start_time
-    elapsed_time_s = elapsed_time / 1000
-    print 'Processed in', elapsed_time, 'ms, max fps =', int(math.floor(1 / elapsed_time_s))
 
     return output_targets
