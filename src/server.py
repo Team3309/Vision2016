@@ -86,7 +86,7 @@ def targets_route():
     try:
         new_data_condition.acquire()
         new_data_condition.wait()
-        targets = state['target']
+        targets = state['targets']
         return Response(json.dumps(targets), mimetype='application/json')
     finally:
         new_data_condition.release()
