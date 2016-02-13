@@ -98,12 +98,16 @@
                     }
                     ctx.fillStyle = originalFill;
                 });
+                $.getJSON('/connected', function(data) {
+                    $('#connected').text(data);
+                })
             }, 1000)
         });
     </script>
 </head>
 <body>
 <div class="controls">
+    <span>Connected: <span id="connected"></span></span>
     <form id="config-form" action="/target-config" method="post">
         <label>
             Min Hue

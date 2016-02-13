@@ -63,7 +63,7 @@ def save_config(outconfig):
         outfile.close()
 
 
-state = {}
+state = {'ack': False}
 config = load_config()
 
 
@@ -79,6 +79,11 @@ def config_route():
 
 new_data_lock = threading.RLock()
 new_data_condition = threading.Condition(new_data_lock)
+
+
+@app.route('/connected')
+def connected_route():
+    return Response(json.dumps(state['ack']), mimetype='application/json')
 
 
 @app.route('/targets')
@@ -170,8 +175,10 @@ def image_loop():
 
 
 def comm_loop():
-    sock = socket.socket(socket.AF_INET,  # Internet
-                         socket.SOCK_DGRAM)  # UDP
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    listen_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    listen_sock.bind(('', 9033))
+    listen_sock.settimeout(5)  # 5 second timeout
     while True:
         try:
             new_data_condition.acquire()
@@ -179,7 +186,23 @@ def comm_loop():
 
             targets = state['targets']
             message = json.dumps(targets)
-            sock.sendto(message, (config['destination'], 3309))
+            try:
+                sock.sendto(message, (config['destination'], 3309))
+            except socket.error:
+                print 'socket error sending'
+                state['ack'] = False
+
+            # wait for an ack
+            try:
+                data, addr = listen_sock.recvfrom(2048)
+                if json.loads(data)['ack']:
+                    print 'Got ack from', addr
+                    state['ack'] = True
+                else:
+                    state['ack'] = False
+            except socket.timeout:
+                print 'Didn\'t get ACK from client'
+                state['ack'] = False
         finally:
             new_data_condition.release()
 

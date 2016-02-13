@@ -1,5 +1,5 @@
 {
-  "destination": "localhost",
+  "destination": "roboRIO-3309-FRC.local",
   "target": {
     "hue_max": 106,
     "sat_min": 32,
