@@ -174,11 +174,26 @@ def image_loop():
         time.sleep(0.5)  # slow down so its visible
 
 
-def comm_loop():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def ack_loop():
     listen_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     listen_sock.bind(('', 9033))
     listen_sock.settimeout(5)  # 5 second timeout
+
+    # wait for an ack
+    try:
+        data, addr = listen_sock.recvfrom(2048)
+        if json.loads(data)['ack']:
+            print 'Got ack from', addr
+            state['ack'] = True
+        else:
+            state['ack'] = False
+    except socket.timeout:
+        print 'Didn\'t get ACK from client'
+        state['ack'] = False
+
+
+def comm_loop():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
         try:
             new_data_condition.acquire()
@@ -192,17 +207,6 @@ def comm_loop():
                 print 'socket error sending'
                 state['ack'] = False
 
-            # wait for an ack
-            try:
-                data, addr = listen_sock.recvfrom(2048)
-                if json.loads(data)['ack']:
-                    print 'Got ack from', addr
-                    state['ack'] = True
-                else:
-                    state['ack'] = False
-            except socket.timeout:
-                print 'Didn\'t get ACK from client'
-                state['ack'] = False
         finally:
             new_data_condition.release()
 
@@ -216,6 +220,10 @@ if __name__ == "__main__":
     comm_thread = threading.Thread(target=comm_loop)
     comm_thread.daemon = True
     comm_thread.start()
+
+    ack_thread = threading.Thread(target=ack_loop)
+    ack_thread.daemon = True
+    ack_thread.start()
 
     # camera_loop()
     image_loop()
