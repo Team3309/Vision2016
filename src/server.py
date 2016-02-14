@@ -146,6 +146,7 @@ def camera_loop():
     print('Opening camera')
     capture.open(0)
     print('Opened camera')
+    num_frames = 0
     while True:
         start_time = time.time()
         success, img = capture.read()
@@ -153,11 +154,14 @@ def camera_loop():
             print('Failed to get image from camera')
             continue
 
-        handle_image(img)
+        # only process every 5 frames
+        if num_frames % 5 == 0:
+            handle_image(img)
 
-        elapsed_time = time.time() - start_time
-        elapsed_time_s = elapsed_time / 1000
-        print 'Processed in', elapsed_time, 'ms, max fps =', int(math.floor(1 / elapsed_time_s))
+            elapsed_time = time.time() - start_time
+            elapsed_time_s = elapsed_time / 1000
+            print 'Processed in', elapsed_time, 'ms, max fps =', int(math.floor(1 / elapsed_time_s))
+        num_frames += 1
 
 
 def image_loop():
@@ -225,5 +229,5 @@ if __name__ == "__main__":
     ack_thread.daemon = True
     ack_thread.start()
 
-    # camera_loop()
-    image_loop()
+    camera_loop()
+    # image_loop()
