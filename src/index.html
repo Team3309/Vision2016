@@ -95,11 +95,12 @@
                         ctx.fill();
                         ctx.fillStyle = '#000000';
                         ctx.fillText(distanceString(target.distance), x, y + 15);
-                        ctx.fillText(Math.round(target.elevation_angle) + "°", x, y + 35);
+                        ctx.fillText("e:" + Math.round(target.elevation_angle) + "°", x, y + 35);
+                        ctx.fillText("a:" + Math.round(target.azimuth) + "°", x, y + 55);
                     }
                     ctx.fillStyle = originalFill;
                 });
-                $.getJSON('/connected', function(data) {
+                $.getJSON('/connected', function (data) {
                     $('#connected').text(data);
                 })
             }, 1000)
