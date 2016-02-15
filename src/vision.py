@@ -238,6 +238,11 @@ def target_distance(target):
     return dist_inches
 
 
+def target_angle_of_elevation(dist_in):
+    delta_height = 96.5 - 13  # 96.5 inches off the ground - 13 inches height of shooter
+    return math.degrees(math.atan2(delta_height, dist_in))
+
+
 def to_targeting_coords(target, imshape):
     """
     Convert to a targeting coordinate system of [-1, 1]
@@ -328,7 +333,8 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
                 'width': target[1][0],
                 'height': target[1][1]
             },
-            'distance': target_distance(target)
+            'distance': target_distance(target),
+            'elevation_angle': target_angle_of_elevation(target_distance(target))
         } for target in targets]
 
     return output_targets

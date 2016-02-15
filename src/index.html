@@ -94,7 +94,8 @@
                         ctx.arc(x, y, 5, 0, 2 * Math.PI);
                         ctx.fill();
                         ctx.fillStyle = '#000000';
-                        ctx.fillText(distanceString(target.distance), x, y + 15)
+                        ctx.fillText(distanceString(target.distance), x, y + 15);
+                        ctx.fillText(Math.round(target.elevation_angle) + "°", x, y + 35);
                     }
                     ctx.fillStyle = originalFill;
                 });
