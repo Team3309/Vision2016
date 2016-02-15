@@ -243,6 +243,24 @@ def target_angle_of_elevation(dist_in):
     return math.degrees(math.atan2(delta_height, dist_in))
 
 
+def target_azimuth(target):
+    # target[1][0] is [0,1] percentage of full frame width
+    # full frame width =    target_width_in
+    #                       -------------------------------
+    #                       target_width%
+    # target is 1ft8in wide
+    full_frame_width_in = (12 + 8) / target[1][0]
+    center_x_in = full_frame_width_in / 2
+    # target x inches = (1/2)(target_x + 1)
+    #                   -------------------
+    #                   full_width_in
+    target_x_in = ((1 / 2) * (target[0][0] + 1)) / full_frame_width_in
+    delta_x_in = target_x_in - center_x_in
+    azimuth = math.atan2(delta_x_in, target_distance(target))
+    azimuth = math.degrees(azimuth)
+    return azimuth
+
+
 def to_targeting_coords(target, imshape):
     """
     Convert to a targeting coordinate system of [-1, 1]
@@ -334,7 +352,8 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
                 'height': target[1][1]
             },
             'distance': target_distance(target),
-            'elevation_angle': target_angle_of_elevation(target_distance(target))
+            'elevation_angle': target_angle_of_elevation(target_distance(target)),
+            'azimuth': target_azimuth(target)
         } for target in targets]
 
     return output_targets
