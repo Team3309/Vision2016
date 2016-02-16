@@ -2,7 +2,7 @@
   "destination": "roboRIO-3309-FRC.local",
   "target": {
     "hue_max": 127,
-    "sat_min": 72,
+    "sat_min": 71,
     "sat_max": 255,
     "val_min": 135,
     "hue_min": 67,
