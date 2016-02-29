@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import json
 import math
 import os
@@ -94,34 +95,36 @@ def update_socket(ws):
             'fps': state['fps'],
             'connected': state['ack']
         }
+        _, binframe = cv2.imencode('.jpg', state['output_images']['bin'])
+        result['binaryImg'] = base64.b64encode(binframe)
+        _, binframe = cv2.imencode('.jpg', state['output_images']['result'])
+        result['resultImg'] = base64.b64encode(binframe)
         message = json.dumps(result)
         new_data_condition.release()
         ws.send(message)
 
 
-def image_generator(name):
-    while True:
-        try:
-            new_data_condition.acquire()
-            new_data_condition.wait()
-            _, frame = cv2.imencode('.jpg', state['output_images'][name])
+def image_socket(ws, name):
+    num_frames = 0
+    while not ws.closed:
+        new_data_condition.acquire()
+        new_data_condition.wait()
+        if num_frames % 50 == 0:
+            img_copy = state['output_images'][name].copy()
+            new_data_condition.rjjelease()
+        else:
             new_data_condition.release()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
-        finally:
-            new_data_condition.release()
+        num_frames += 1
 
 
-@app.route('/binary')
-def binary_image_route():
-    return Response(image_generator('bin'),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+@sockets.route('/binary')
+def binary_socket(ws):
+    return image_socket(ws, 'bin')
 
 
-@app.route('/result')
-def result_image_route():
-    return Response(image_generator('result'),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+@sockets.route('/result')
+def result_socket(ws):
+    return image_socket(ws, 'result')
 
 
 def start_server():

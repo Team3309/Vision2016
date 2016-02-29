@@ -69,6 +69,8 @@
 
                 $('#fps').text(data.fps + 'FPS');
                 $('#connected').text(data.connected);
+                document.getElementById('result').setAttribute('src', 'data:image/jpg;base64,' + data.resultImg);
+                document.getElementById('binary').setAttribute('src', 'data:image/jpg;base64,' + data.binaryImg);
 
                 //draw on canvas
                 var ctx = document.getElementById('target-frame').getContext('2d');
@@ -154,8 +156,8 @@
     </form>
     <span id="fps"></span>
     <br>
-    <img id="binary" src="/binary">
-    <img id="result" src="/result"> <br>
+    <img id="binary">
+    <img id="result"> <br>
     <canvas id="target-frame" width="480" height="360">
     </canvas>
 </div>
