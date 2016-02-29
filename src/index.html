@@ -62,12 +62,14 @@
             }
 
             // get target information on an interval and draw it onto the canvas
-            setInterval(function () {
+            function update() {
                 var d = new Date();
 
                 var ctx = document.getElementById('target-frame').getContext('2d');
                 var width = 480, height = 360;
                 $.getJSON('/targets', function (targets) {
+                    $('#fps').text(targets.fps + 'FPS');
+
                     ctx.clearRect(0, 0, width, height);
                     ctx.beginPath();
                     ctx.moveTo(0, height / 2);
@@ -78,8 +80,8 @@
 
                     var originalFill = ctx.fillStyle;
                     ctx.font = "20px Arial";
-                    for (var i = 0; i < targets.length; i++) {
-                        var target = targets[i];
+                    for (var i = 0; i < targets.targets.length; i++) {
+                        var target = targets.targets[i];
                         ctx.fillStyle = '#ff0000';
                         ctx.beginPath();
                         var x = target.pos.x;
@@ -99,11 +101,15 @@
                         ctx.fillText("a:" + Math.round(target.azimuth) + "°", x, y + 55);
                     }
                     ctx.fillStyle = originalFill;
+
+                    //update again
+                    setTimeout(update, 500);
                 });
                 $.getJSON('/connected', function (data) {
                     $('#connected').text(data);
-                })
-            }, 1000)
+                });
+            }
+            update();
         });
     </script>
 </head>
@@ -149,6 +155,7 @@
             <span></span>
         </label>
     </form>
+    <span id="fps"></span>
     <br>
     <img id="binary" src="/binary">
     <img id="result" src="/result"> <br>
