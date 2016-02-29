@@ -23,10 +23,12 @@ import time
 
 import cv2
 from flask import Flask, Response, request, jsonify
+from flask_sockets import Sockets
 
 import vision
 
 app = Flask(__name__)
+sockets = Sockets(app)
 
 
 def root_dir():
@@ -81,23 +83,20 @@ new_data_lock = threading.RLock()
 new_data_condition = threading.Condition(new_data_lock)
 
 
-@app.route('/connected')
-def connected_route():
-    return Response(json.dumps(state['ack']), mimetype='application/json')
-
-
-@app.route('/targets')
-def targets_route():
-    try:
+@sockets.route('/socket')
+def update_socket(ws):
+    print 'websocket connection request'
+    while not ws.closed:
         new_data_condition.acquire()
         new_data_condition.wait()
         result = {
             'targets': state['targets'],
-            'fps': state['fps']
+            'fps': state['fps'],
+            'connected': state['ack']
         }
-        return Response(json.dumps(result), mimetype='application/json')
-    finally:
+        message = json.dumps(result)
         new_data_condition.release()
+        ws.send(message)
 
 
 def image_generator(name):
@@ -106,6 +105,7 @@ def image_generator(name):
             new_data_condition.acquire()
             new_data_condition.wait()
             _, frame = cv2.imencode('.jpg', state['output_images'][name])
+            new_data_condition.release()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame.tobytes() + b'\r\n')
         finally:
@@ -125,7 +125,10 @@ def result_image_route():
 
 
 def start_server():
-    app.run(host='0.0.0.0', debug=False, threaded=True)
+    from gevent import pywsgi
+    from geventwebsocket.handler import WebSocketHandler
+    server = pywsgi.WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
+    server.serve_forever()
 
 
 def handle_image(img):
@@ -206,12 +209,11 @@ def comm_loop():
 
             targets = state['targets']
             message = json.dumps(targets)
+            new_data_condition.release()
             try:
                 sock.sendto(message, (config['destination'], 3309))
             except socket.error:
-                print 'socket error sending'
                 state['ack'] = False
-
         finally:
             new_data_condition.release()
 

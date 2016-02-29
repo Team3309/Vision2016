@@ -61,55 +61,52 @@
                 return feetStr + inchesStr;
             }
 
-            // get target information on an interval and draw it onto the canvas
-            function update() {
-                var d = new Date();
 
+            // connect to server with websocket to get realtime updates
+            var socket = new WebSocket("ws://" + window.location.host + "/socket");
+            socket.onmessage = function (event) {
+                var data = JSON.parse(event.data);
+
+                $('#fps').text(data.fps + 'FPS');
+                $('#connected').text(data.connected);
+
+                //draw on canvas
                 var ctx = document.getElementById('target-frame').getContext('2d');
                 var width = 480, height = 360;
-                $.getJSON('/targets', function (targets) {
-                    $('#fps').text(targets.fps + 'FPS');
+                var targets = data.targets;
 
-                    ctx.clearRect(0, 0, width, height);
+                ctx.clearRect(0, 0, width, height);
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.moveTo(width / 2, 0);
+                ctx.lineTo(width / 2, height);
+                ctx.stroke();
+
+                var originalFill = ctx.fillStyle;
+                ctx.font = "20px Arial";
+                for (var i = 0; i < targets.length; i++) {
+                    var target = targets[i];
+                    ctx.fillStyle = '#ff0000';
                     ctx.beginPath();
-                    ctx.moveTo(0, height / 2);
-                    ctx.lineTo(width, height / 2);
-                    ctx.moveTo(width / 2, 0);
-                    ctx.lineTo(width / 2, height);
-                    ctx.stroke();
-
-                    var originalFill = ctx.fillStyle;
-                    ctx.font = "20px Arial";
-                    for (var i = 0; i < targets.targets.length; i++) {
-                        var target = targets.targets[i];
-                        ctx.fillStyle = '#ff0000';
-                        ctx.beginPath();
-                        var x = target.pos.x;
-                        x += 1; //range 0-2
-                        x /= 2; //range 0-1
-                        x *= width; //final coordinates
-                        var y = target.pos.y;
-                        y *= -1; //range -1 top to 1 bottom
-                        y += 1; //range 0-2
-                        y /= 2; //range 0-1
-                        y *= height; //final coordinates
-                        ctx.arc(x, y, 5, 0, 2 * Math.PI);
-                        ctx.fill();
-                        ctx.fillStyle = '#000000';
-                        ctx.fillText(distanceString(target.distance), x, y + 15);
-                        ctx.fillText("e:" + Math.round(target.elevation_angle) + "°", x, y + 35);
-                        ctx.fillText("a:" + Math.round(target.azimuth) + "°", x, y + 55);
-                    }
-                    ctx.fillStyle = originalFill;
-
-                    //update again
-                    setTimeout(update, 500);
-                });
-                $.getJSON('/connected', function (data) {
-                    $('#connected').text(data);
-                });
-            }
-            update();
+                    var x = target.pos.x;
+                    x += 1; //range 0-2
+                    x /= 2; //range 0-1
+                    x *= width; //final coordinates
+                    var y = target.pos.y;
+                    y *= -1; //range -1 top to 1 bottom
+                    y += 1; //range 0-2
+                    y /= 2; //range 0-1
+                    y *= height; //final coordinates
+                    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.fillStyle = '#000000';
+                    ctx.fillText(distanceString(target.distance), x, y + 15);
+                    ctx.fillText("e:" + Math.round(target.elevation_angle) + "°", x, y + 35);
+                    ctx.fillText("a:" + Math.round(target.azimuth) + "°", x, y + 55);
+                }
+                ctx.fillStyle = originalFill;
+            };
         });
     </script>
 </head>
