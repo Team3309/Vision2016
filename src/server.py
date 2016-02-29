@@ -104,29 +104,6 @@ def update_socket(ws):
         ws.send(message)
 
 
-def image_socket(ws, name):
-    num_frames = 0
-    while not ws.closed:
-        new_data_condition.acquire()
-        new_data_condition.wait()
-        if num_frames % 50 == 0:
-            img_copy = state['output_images'][name].copy()
-            new_data_condition.rjjelease()
-        else:
-            new_data_condition.release()
-        num_frames += 1
-
-
-@sockets.route('/binary')
-def binary_socket(ws):
-    return image_socket(ws, 'bin')
-
-
-@sockets.route('/result')
-def result_socket(ws):
-    return image_socket(ws, 'result')
-
-
 def start_server():
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
