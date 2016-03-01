@@ -102,6 +102,10 @@ def update_socket(ws):
         message = json.dumps(result)
         new_data_condition.release()
         ws.send(message)
+        received = json.loads(ws.receive())
+        if 'thresholds' in received:
+            config['target'] = received
+            save_config(config)
 
 
 def start_server():

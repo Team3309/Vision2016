@@ -39,20 +39,6 @@
                 $(elem).next().text($(elem).val())
             });
 
-            $('form').on('submit', function (e) {
-                e.preventDefault();
-                $.ajax({
-                    url: $(this).attr('action') || window.location.pathname,
-                    type: "POST",
-                    data: $(this).serialize(),
-                    success: function (data) {
-                    },
-                    error: function (jXHR, textStatus, errorThrown) {
-                        alert(errorThrown);
-                    }
-                });
-            });
-
             function distanceString(inches) {
                 var feet = Math.round(inches / 12);
                 var feetStr = feet > 0 ? feet + 'ft' : '';
@@ -61,10 +47,11 @@
                 return feetStr + inchesStr;
             }
 
-
             // connect to server with websocket to get realtime updates
             var socket = new WebSocket("ws://" + window.location.host + "/socket");
             socket.onmessage = function (event) {
+                // send back threshold data
+                socket.send(JSON.stringify($('#config-form').serialize()));
                 var data = JSON.parse(event.data);
 
                 $('#fps').text(data.fps + 'FPS');
