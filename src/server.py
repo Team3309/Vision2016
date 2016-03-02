@@ -104,7 +104,7 @@ def update_socket(ws):
         ws.send(message)
         received = json.loads(ws.receive())
         if 'thresholds' in received:
-            config['target'] = received
+            config['target'] = received['thresholds']
             save_config(config)
 
 
