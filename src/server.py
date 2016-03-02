@@ -187,6 +187,7 @@ def ack_loop():
 def comm_loop():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
+        released = False
         try:
             new_data_condition.acquire()
             new_data_condition.wait()
@@ -194,12 +195,14 @@ def comm_loop():
             targets = state['targets']
             message = json.dumps(targets)
             new_data_condition.release()
+            released = True
             try:
                 sock.sendto(message, (config['destination'], 3309))
             except socket.error:
                 state['ack'] = False
         finally:
-            new_data_condition.release()
+            if not released:
+                new_data_condition.release()
 
 
 if __name__ == "__main__":
