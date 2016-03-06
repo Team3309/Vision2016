@@ -178,6 +178,8 @@ def ack_loop():
 
 
 def comm_loop():
+    fps_smoothed = None
+    fps_smoothing_factor = 0.5
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
         released = False
@@ -202,7 +204,13 @@ def comm_loop():
             # frame time = 1 second / fps
             # fps = 1 second / frame time
             max_fps = 1 / delta.total_seconds()
-            state['fps'] = max_fps
+
+            # apply exponential smoothing to fps calculation
+            if not fps_smoothed:
+                fps_smoothed = max_fps
+            fps_smoothed = fps_smoothing_factor * max_fps + (1 - fps_smoothing_factor) * fps_smoothed
+
+            state['fps'] = fps_smoothed
             print 'Processed in', delta.total_seconds() * 1000, 'ms, max fps =', max_fps
 
 
