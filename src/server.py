@@ -15,8 +15,8 @@
 # limitations under the License.
 
 import base64
+import datetime
 import json
-import math
 import os
 import socket
 import threading
@@ -137,19 +137,12 @@ def camera_loop():
     capture.open(0)
     print('Opened camera')
     while True:
-        start_time = time.time()
         success, img = capture.read()
         if not success:
             print('Failed to get image from camera')
             continue
 
         handle_image(img)
-
-        elapsed_time = time.time() - start_time
-        elapsed_time_s = elapsed_time / 1000
-        max_fps = int(math.floor(1 / elapsed_time_s))
-        state['fps'] = max_fps
-        print 'Processed in', elapsed_time, 'ms, max fps =', max_fps
 
 
 def image_loop():
@@ -188,6 +181,7 @@ def comm_loop():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
         released = False
+        start = datetime.datetime.now()
         try:
             new_data_condition.acquire()
             new_data_condition.wait()
@@ -203,6 +197,13 @@ def comm_loop():
         finally:
             if not released:
                 new_data_condition.release()
+            end = datetime.datetime.now()
+            delta = end - start
+            # frame time = 1 second / fps
+            # fps = 1 second / frame time
+            max_fps = 1 / delta.total_seconds()
+            state['fps'] = max_fps
+            print 'Processed in', delta.total_seconds() * 1000, 'ms, max fps =', max_fps
 
 
 if __name__ == "__main__":
