@@ -66,7 +66,7 @@ def save_config(outconfig):
         outfile.close()
 
 
-state = {'ack': False}
+state = {'ack': False, 'draw_output': False}
 config = load_config()
 
 
@@ -87,6 +87,7 @@ new_data_condition = threading.Condition(new_data_lock)
 @sockets.route('/socket')
 def update_socket(ws):
     print 'websocket connection request'
+    state['draw_output'] = True
     while not ws.closed:
         new_data_condition.acquire()
         new_data_condition.wait()
@@ -106,6 +107,8 @@ def update_socket(ws):
         if 'thresholds' in received:
             config['target'] = received['thresholds']
             save_config(config)
+    print 'websocket disconnected'
+    state['draw_output'] = False
 
 
 def start_server():
@@ -122,6 +125,7 @@ def handle_image(img):
     state['img'] = hsv
     args = config['target'].copy()
     args['img'] = hsv
+    args['draw_output'] = state['draw_output']
     args['output_images'] = {}
 
     targets = vision.find(**args)
@@ -156,7 +160,7 @@ def image_loop():
         image_counter = (image_counter + 1) % 350
 
         handle_image(img)
-        time.sleep(0.5)  # slow down so its visible
+        time.sleep(33 / 1000)  # slow down so its visible
 
 
 def ack_loop():
@@ -228,5 +232,5 @@ if __name__ == "__main__":
     ack_thread.daemon = True
     ack_thread.start()
 
-    camera_loop()
-    # image_loop()
+    # camera_loop()
+    image_loop()

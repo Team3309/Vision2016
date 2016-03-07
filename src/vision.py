@@ -279,7 +279,7 @@ def to_targeting_coords(target, imshape):
     return (x, y), (width, height)
 
 
-def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_images):
+def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, draw_output, output_images):
     """
     Detect high goals in the input image
     :param img: hsv input image
@@ -302,7 +302,8 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     dilate_kernel = np.ones((5, 5), np.uint8)
     bin = cv2.dilate(bin, dilate_kernel, iterations=1)
 
-    output_images['bin'] = np.copy(bin)
+    if draw_output:
+        output_images['bin'] = np.copy(bin)
 
     _, contours, hierarchy = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -311,24 +312,26 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
     filtered_contours = [x for x in contours if contour_filter(contour=x, min_score=95, binary=bin)]
     # print 'contour filtered', original_count, 'to', len(filtered_contours)
 
-    # convert img back to bgr so it looks good when displayed
-    img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
-    # draw outlines so we know it actually detected it
-    polys = [cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True) for contour in filtered_contours]
-    cv2.drawContours(img, polys, -1, (0, 0, 255), 2)
+    if draw_output:
+        # convert img back to bgr so it looks good when displayed
+        img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
+        # draw outlines so we know it actually detected it
+        polys = [cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True) for contour in filtered_contours]
+        cv2.drawContours(img, polys, -1, (0, 0, 255), 2)
 
     original_targets = [(target_center(contour), cv2.boundingRect(contour)) for contour in filtered_contours]
     original_targets = [(center, (rect[2], rect[3])) for (center, rect) in original_targets]
     # original_targets is now a list of (x, y) and (width, height)
     targets = [to_targeting_coords(target, img.shape) for target in original_targets]
 
-    # draw targeting coordinate system on top of the result image
-    # axes
-    imheight, imwidth, _ = img.shape
-    cv2.line(img, (int(imwidth / 2), 0), (int(imwidth / 2), int(imheight)), (255, 255, 255), 5)
-    cv2.line(img, (0, int(imheight / 2)), (int(imwidth), int(imheight / 2)), (255, 255, 255), 5)
-    # aiming reticle
-    cv2.circle(img, (int(imwidth / 2), int(imheight / 2)), 50, (255, 255, 255), 5)
+    if draw_output:
+        # draw targeting coordinate system on top of the result image
+        imheight, imwidth, _ = img.shape
+        # axes
+        cv2.line(img, (int(imwidth / 2), 0), (int(imwidth / 2), int(imheight)), (255, 255, 255), 5)
+        cv2.line(img, (0, int(imheight / 2)), (int(imwidth), int(imheight / 2)), (255, 255, 255), 5)
+        # aiming reticle
+        cv2.circle(img, (int(imwidth / 2), int(imheight / 2)), 50, (255, 255, 255), 5)
 
     # draw dots on the center of each target
     for target in original_targets:  # use original_targets so we don't have to recalculate image coords
@@ -336,7 +339,8 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, output_image
         y = int(target[0][1])
         cv2.circle(img, (x, y), 10, (0, 0, 255), -1)
 
-    output_images['result'] = img
+    if draw_output:
+        output_images['result'] = img
 
     output_targets = [
         {
