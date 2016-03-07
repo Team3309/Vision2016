@@ -119,6 +119,7 @@ def start_server():
 
 
 def handle_image(img):
+    img = cv2.resize(img, (img.shape[0] / 2, img.shape[1] / 2))
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     new_data_condition.acquire()
