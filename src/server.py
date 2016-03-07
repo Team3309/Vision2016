@@ -119,7 +119,6 @@ def start_server():
 
 
 def handle_image(img):
-    img = cv2.resize(img, (img.shape[0] / 2, img.shape[1] / 2))
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     new_data_condition.acquire()
@@ -141,6 +140,9 @@ def camera_loop():
     print('Opening camera')
     capture.open(0)
     print('Opened camera')
+    capture.set(cv2.CAP_PROP_AUTOFOCUS, False)
+    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     while True:
         success, img = capture.read()
         if not success:
@@ -233,5 +235,5 @@ if __name__ == "__main__":
     ack_thread.daemon = True
     ack_thread.start()
 
-    # camera_loop()
-    image_loop()
+    camera_loop()
+    # image_loop()
