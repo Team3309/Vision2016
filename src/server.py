@@ -217,8 +217,8 @@ def comm_loop():
                 fps_smoothed = max_fps
             fps_smoothed = fps_smoothing_factor * max_fps + (1 - fps_smoothing_factor) * fps_smoothed
 
-            state['fps'] = fps_smoothed
-            print 'Processed in', delta.total_seconds() * 1000, 'ms, max fps =', max_fps
+            state['fps'] = round(fps_smoothed, 1)
+            print 'Processed in', delta.total_seconds() * 1000, 'ms, max fps =', round(fps_smoothed, 1)
 
 
 if __name__ == "__main__":
