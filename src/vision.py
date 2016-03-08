@@ -241,7 +241,7 @@ def target_azimuth(target):
     camera_fov_horiz = 53.50
     # target[0][0] is [-1,1] position in image
     x = target[0][0]
-    angle = camera_fov_horiz * x
+    angle = (camera_fov_horiz / 2) * x
     return angle
 
 
