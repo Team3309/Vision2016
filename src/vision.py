@@ -222,20 +222,14 @@ def target_center(contour):
 
 
 def target_distance(target):
-    # http://photo.stackexchange.com/questions/12434/how-do-i-calculate-the-distance-of-an-object-in-a-photo
-    # distance to object (mm) = focal length (mm) * real height of the object (mm) * image height (pixels)
-    #                           ---------------------------------------------------------------------------
-    #                           object height (pixels) * sensor height (mm)
-    target_height_mm = 304.8  # 1ft = 304.8mm
-    focal_length_mm = 3.60  # raspberry pi camera module focal length
-    sensor_height_mm = 2.74  # raspberry pi camera module sensor height in mm
-    # image height is 100%, target[1][1] is the fraction height of the total image height
-    image_height = 1
-    target_img_height = target[1][1]
-
-    distance_mm = (focal_length_mm * target_height_mm * image_height) / (target_img_height * sensor_height_mm)
-    dist_inches = distance_mm * 0.039370
-    return dist_inches
+    camera_fov_vert = 41.41
+    camera_pitch = 40
+    # units in inches
+    target_height = 83
+    camera_height = 9
+    # target[0][1] is [1,-1] y coord from top-bottom
+    y = target[0][1]
+    return (target_height - camera_height) / math.tan(math.radians((y * camera_fov_vert / 2) + camera_pitch))
 
 
 def target_angle_of_elevation(dist_in):
