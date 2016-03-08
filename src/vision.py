@@ -244,18 +244,11 @@ def target_angle_of_elevation(dist_in):
 
 
 def target_azimuth(target):
-    # target[1][0] is [0,1] percentage of full frame width
-    goal_width_percent = target[1][0]
+    camera_fov_horiz = 53.50
+    # target[0][0] is [-1,1] position in image
     x = target[0][0]
-    percent_to_turn = (x / 2)
-
-    # full frame width =    target_width_in
-    #                       -------------------------------
-    #                       target_width%
-    # target is 1ft8in wide
-    width_of_image_in = (8 + 12) / goal_width_percent
-    delta_x_inches = width_of_image_in * percent_to_turn
-    return math.degrees(math.atan2(delta_x_inches, target_distance(target)))
+    angle = camera_fov_horiz * x
+    return angle
 
 
 def to_targeting_coords(target, imshape):
