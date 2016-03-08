@@ -212,12 +212,12 @@ def contour_filter(contour, min_score, binary):
 
 def target_center(contour):
     """
-    Calculate center point, the midpoint between the upper two corners
+    Calculate center point, the midpoint between the bottom two corners
     :param contour:
     :return:
     """
     corners = get_corners(contour)
-    top_midpoint = ((corners[0][0] + corners[1][0]) / 2, (corners[0][1] + corners[1][1]) / 2)
+    top_midpoint = ((corners[2][0] + corners[3][0]) / 2, (corners[2][1] + corners[3][1]) / 2)
     return top_midpoint
 
 
