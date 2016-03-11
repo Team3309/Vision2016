@@ -114,7 +114,7 @@ def update_socket(ws):
 def start_server():
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
-    server = pywsgi.WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(('', 80), app, handler_class=WebSocketHandler)
     server.serve_forever()
 
 
@@ -200,7 +200,7 @@ def comm_loop():
             new_data_condition.release()
             released = True
             try:
-                sock.sendto(message, (config['destination'], 3309))
+                sock.sendto(message, (config['destination'], 5809))
             except socket.error:
                 state['ack'] = False
         finally:
