@@ -91,6 +91,7 @@ def update_socket(ws):
     while not ws.closed:
         new_data_condition.acquire()
         new_data_condition.wait()
+        new_data_condition.release()
         result = {
             'targets': state['targets'],
             'fps': state['fps'],
@@ -101,7 +102,6 @@ def update_socket(ws):
         _, binframe = cv2.imencode('.jpg', state['output_images']['result'])
         result['resultImg'] = base64.b64encode(binframe)
         message = json.dumps(result)
-        new_data_condition.release()
         ws.send(message)
         received = json.loads(ws.receive())
         if 'thresholds' in received:
@@ -189,23 +189,19 @@ def comm_loop():
     fps_smoothing_factor = 0.5
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
-        released = False
         start = datetime.datetime.now()
         try:
             new_data_condition.acquire()
             new_data_condition.wait()
+            new_data_condition.release()
 
             targets = state['targets']
             message = json.dumps(targets)
-            new_data_condition.release()
-            released = True
             try:
                 sock.sendto(message, (config['destination'], 5809))
             except socket.error:
                 state['ack'] = False
         finally:
-            if not released:
-                new_data_condition.release()
             end = datetime.datetime.now()
             delta = end - start
             # frame time = 1 second / fps
