@@ -140,9 +140,6 @@ def camera_loop():
     print('Opening camera')
     capture.open(0)
     print('Opened camera')
-    capture.set(cv2.CAP_PROP_AUTOFOCUS, False)
-    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
     while True:
         success, img = capture.read()
         if not success:
