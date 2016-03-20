@@ -171,7 +171,7 @@ def fix_target_perspective(contour, bin_shape):
         fixed_perspective = cv2.warpPerspective(before_warp, warp, shape)
         fixed_perspective = fixed_perspective.astype(np.uint8)
 
-        if cv2.__version__ >= 3:
+        if int(cv2.__version__.split('.')[0]) >= 3:
             _, contours, _ = cv2.findContours(fixed_perspective, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         else:
             contours, _ = cv2.findContours(fixed_perspective, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -295,7 +295,7 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, draw_output,
     if draw_output:
         output_images['bin'] = np.copy(bin)
 
-    if cv2.__version__ >= 3:
+    if int(cv2.__version__.split('.')[0]) >= 3:
         _, contours, hierarchy = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     else:
         contours, hierarchy = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
