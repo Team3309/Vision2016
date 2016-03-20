@@ -1,6 +1,7 @@
 #include <list>
 #include <iostream>
 #include <vector>
+
 using namespace std;
 
 #include "target.h"
@@ -12,10 +13,14 @@ using namespace std;
 #define OCL 1
 
 #if OCL
+
 #include <opencv2/ocl/ocl.hpp>
+
 using namespace cv::ocl;
 typedef oclMat mat;
+
 #include "vision_ocl.h"
+
 #else
 #include <opencv2/gpu/gpu.hpp>
 using namespace cv::gpu;
@@ -57,12 +62,18 @@ list<Target> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMa
   mat bin(img.size(), CV_8UC1);
   hsvThreshold(img, bin, hueMin, hueMax, satMin, satMax, valMin, valMax);
 
+  //erode to remove bad dots
+  cv::Mat erosion = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3), cv::Point(1, 1));
+  erode(bin, bin, erosion);
+  //dilate to fill holes
+  cv::Mat dilation = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(2, 2));
+  dilate(bin, bin, dilation);
+
 #if DEBUG
   bin.download(cpuImg);
   cv::imshow("Bin", cpuImg);
   cv::waitKey(0);
 #endif
-
 
   return lst;
 }
