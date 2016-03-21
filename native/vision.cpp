@@ -28,6 +28,9 @@ using namespace cv::gpu;
 typedef GpuMat mat;
 #endif
 
+#define PERSPECTIVE_ROWS 280
+#define PERSPECTIVE_COLS 400
+
 vector<cv::Point2f> sortCorners(vector<cv::Point> &corners) {
   if (corners.size() != 4) {
     throw "Wrong number of corners";
@@ -52,7 +55,7 @@ vector<cv::Point2f> getCorners(const vector<cv::Point> &contour) {
   return sortCorners(unsortedCorners);
 }
 
-vector<cv::Point> fixTargetPerspective(vector<cv::Point> contour, cv::Size binSize, mat &new_bin) {
+vector<cv::Point2f> fixTargetPerspective(const vector<cv::Point> &contour, cv::Size binSize, mat &new_bin) {
   cv::Mat beforeWarpCpu = mat(binSize, CV_8UC1);
   vector<vector<cv::Point> > drawingContours;
   drawingContours.push_back(contour);
@@ -61,7 +64,7 @@ vector<cv::Point> fixTargetPerspective(vector<cv::Point> contour, cv::Size binSi
 
   vector<cv::Point2f> corners = getCorners(contour);
   // get a perspective transformation so that the target is warped as if it was viewed head on
-  cv::Size shape(400, 280);
+  cv::Size shape(PERSPECTIVE_COLS, PERSPECTIVE_ROWS);
   vector<cv::Point2f> destCorners = {
       cv::Point2f(0, 0),
       cv::Point2f(shape.width, 0),
@@ -78,11 +81,72 @@ vector<cv::Point> fixTargetPerspective(vector<cv::Point> contour, cv::Size binSi
   vector<vector<cv::Point> > contours;
   cv::findContours(fixedCpu, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-  return contours[0];
+  //convert to point2f contour
+  vector<cv::Point2f> first(contours[0].size());
+  for (auto it = contours[0].begin(); it != contours[0].end(); ++it) {
+    first.push_back(*it);
+  }
+  return first;
+}
+
+double aspectRatioScore(const vector<cv::Point2f> &contour) {
+  cv::RotatedRect rect = cv::minAreaRect(contour);
+
+  double ratioScore = 0.0;
+
+  // check to make sure the size is defined to prevent possible division by 0 error
+  if (rect.size.width != 0 && rect.size.height != 0) {
+    // the target is 1ft8in wide by 1ft2in high, so ratio of width/height is 20/14
+    ratioScore = 100 - abs((rect.size.width / rect.size.height) - (20 / 14));
+  }
+
+  return ratioScore;
+}
+
+double coverageScore(const vector<cv::Point2f> &contour) {
+  double contourArea = cv::contourArea(contour);
+  cv::Rect bounding = cv::boundingRect(contour);
+  //ideal area is 88/280 (2 14x2 strips + 1 16*2 strip = 88) and 14x20 = 280
+  if (contourArea > 0) {
+    double diff = (bounding.area() / contourArea) - (88.0 / 280.0);
+    return 100 - (diff * 5);
+  }
+  return 0;
+}
+
+double momentScore(const vector<cv::Point2f> &contour) {
+  cv::Moments moments = cv::moments(contour);
+  vector<double> hu;
+  cv::HuMoments(moments, hu);
+  // hu[6] should be close to 0
+  return 100 - (hu[6] * 100);
+}
+
+cv::Mat targetShape() {
+  cv::Mat shape(PERSPECTIVE_ROWS, PERSPECTIVE_COLS, CV_8UC1);
+  //0.125*cols is roughly the width of the tap
+  //left vertical
+  cv::rectangle(shape, cv::Point(0, 0), cv::Point(PERSPECTIVE_COLS * 0.125, PERSPECTIVE_ROWS), 255, -1);
+  //right vertical
+  cv::rectangle(shape, cv::Point(PERSPECTIVE_COLS - (PERSPECTIVE_COLS * 0.125), 0), cv::Point(PERSPECTIVE_COLS, PERSPECTIVE_ROWS), 255, -1);
+  //bottom horizontal
+  cv::rectangle(shape, cv::Point(0, PERSPECTIVE_ROWS - (PERSPECTIVE_COLS * 0.125)), cv::Point(PERSPECTIVE_COLS, PERSPECTIVE_ROWS), 255, -1);
+  return shape;
+}
+
+mat shape(targetShape());
+
+double profileScore(const mat &bin) {
+  mat diff;
+  subtract(shape, bin, diff);
+  cv::Scalar mean, stdDev;
+  meanStdDev(diff, mean, stdDev);
+
+  return (100 - (mean[0]) * 0.25);
 }
 
 //return true if contour passes test
-bool filterContour(vector<cv::Point> contour, cv::Size binSize) {
+bool filterContour(vector<cv::Point> &contour, cv::Size binSize) {
   cv::Rect boundingRect = cv::boundingRect(contour);
   if (boundingRect.area() < 1000 || cv::contourArea(contour, false) < 1000) {
     return false;
@@ -90,9 +154,16 @@ bool filterContour(vector<cv::Point> contour, cv::Size binSize) {
 
   try {
     mat new_bin;
-    contour = fixTargetPerspective(contour, binSize, new_bin);
+    vector<cv::Point2f> newContour = fixTargetPerspective(contour, binSize, new_bin);
 
-    return true;
+    double aspectRatio = aspectRatioScore(newContour);
+    double coverage = coverageScore(newContour);
+    double profile = profileScore(new_bin);
+    double moment = momentScore(newContour);
+
+    double avg = (aspectRatio + coverage + profile + moment) / 4;
+
+    return avg > 90;
   } catch (...) {
     return false;
   }
@@ -118,7 +189,7 @@ void hsvThreshold(mat &img, mat &result, double hueMin, double hueMax, double sa
 }
 
 list<Target> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMax, int valMin, int valMax) {
-  list<Target> lst;
+  list<Target> targets;
   mat img; // GPU image
 
   //OCL doesn't support BGR2HSV on gpu cvtColor
@@ -146,14 +217,14 @@ list<Target> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMa
   vector<vector<cv::Point> > contours;
   cv::findContours(cpuImg, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-  vector<vector<cv::Point> > filteredContours;
   for (auto it = contours.begin(); it != contours.end(); ++it) {
     if (filterContour(*it, bin.size())) {
-      filteredContours.push_back(*it);
+      targets.push_back(Target(*it, bin.size()));
     }
   }
 
-  return lst;
+
+  return targets;
 }
 
 int main() {
