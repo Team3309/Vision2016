@@ -28,10 +28,9 @@ public:
 
   Target(std::vector<cv::Point> contour, cv::Size imgSize);
 
-  ~Target() {
-    delete pos;
-    delete size;
-  }
+  virtual ~Target();
+
+  int imageX, imageY;
 };
 
 #endif

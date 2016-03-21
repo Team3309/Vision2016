@@ -5,6 +5,7 @@
 
 using namespace std;
 
+#include "common.h"
 #include "target.h"
 
 #include <opencv2/opencv.hpp>
@@ -30,30 +31,6 @@ typedef GpuMat mat;
 
 #define PERSPECTIVE_ROWS 280
 #define PERSPECTIVE_COLS 400
-
-vector<cv::Point2f> sortCorners(vector<cv::Point> &corners) {
-  if (corners.size() != 4) {
-    throw "Wrong number of corners";
-  }
-
-  //sort by y, pick low 2 for top and high 2 for bottom
-  sort(corners.begin(), corners.end(), [](cv::Point &a, cv::Point &b) {
-    return a.y < b.y;
-  });
-  cv::Point2f tl = corners[0].x < corners[1].x ? corners[0] : corners[1];
-  cv::Point2f tr = corners[0].x >= corners[1].x ? corners[0] : corners[1];
-  cv::Point2f bl = corners[2].x < corners[3].x ? corners[2] : corners[3];
-  cv::Point2f br = corners[2].x >= corners[3].x ? corners[2] : corners[3];
-  return vector<cv::Point2f> {tl, tr, bl, br};
-}
-
-vector<cv::Point2f> getCorners(const vector<cv::Point> &contour) {
-  vector<cv::Point> hull;
-  cv::convexHull(contour, hull);
-  vector<cv::Point> unsortedCorners;
-  cv::approxPolyDP(hull, unsortedCorners, 0.05 * cv::arcLength(hull, true), true);
-  return sortCorners(unsortedCorners);
-}
 
 vector<cv::Point2f> fixTargetPerspective(const vector<cv::Point> &contour, cv::Size binSize, mat &new_bin) {
   cv::Mat beforeWarpCpu = mat(binSize, CV_8UC1);
@@ -188,8 +165,8 @@ void hsvThreshold(mat &img, mat &result, double hueMin, double hueMax, double sa
   bitwise_and(result, val, result);
 }
 
-list<Target> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMax, int valMin, int valMax) {
-  list<Target> targets;
+list<Target*> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMax, int valMin, int valMax) {
+  list<Target*> targets;
   mat img; // GPU image
 
   //OCL doesn't support BGR2HSV on gpu cvtColor
@@ -219,7 +196,7 @@ list<Target> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMa
 
   for (auto it = contours.begin(); it != contours.end(); ++it) {
     if (filterContour(*it, bin.size())) {
-      targets.push_back(Target(*it, bin.size()));
+      targets.push_back(new Target(*it, bin.size()));
     }
   }
 
@@ -232,7 +209,7 @@ int main() {
   initOpenCL();
 #endif
   cv::Mat img = cv::imread("/Users/vmagro/Developer/frc/RealFullField/0.jpg", cv::IMREAD_COLOR);
-  list<Target> targets = find(img, 67, 127, 71, 255, 135, 255);
+  list<Target*> targets = find(img, 67, 127, 71, 255, 135, 255);
 //  list<Target> targets = find(img, 0, 255, 0, 255, 0, 255);
   cout << "Found " << targets.size() << " targets" << endl;
   return 0;
