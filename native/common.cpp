@@ -1,4 +1,5 @@
 #include <vector>
+#include <algorithm>
 using namespace std;
 #include <opencv2/opencv.hpp>
 

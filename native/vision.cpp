@@ -1,7 +1,7 @@
 #include <list>
 #include <iostream>
 #include <vector>
-#include <algorithm>
+#include <time.h>
 
 using namespace std;
 
@@ -12,28 +12,29 @@ using namespace std;
 
 #define DEBUG 1
 
-#define OCL 1
+//THESE ARE MUTUALLY EXCLUSIVE, CANNOT HAVE BOTH ENABLED (can have neither for pure CPU functionality)
+#define OCL 0
+#define CUDA 0
 
 #if OCL
-
 #include <opencv2/ocl/ocl.hpp>
-
 using namespace cv::ocl;
 typedef oclMat mat;
-
 #include "vision_ocl.h"
-
-#else
+#elif CUDA
 #include <opencv2/gpu/gpu.hpp>
 using namespace cv::gpu;
 typedef GpuMat mat;
+#else
+using namespace cv;
+typedef Mat mat;
 #endif
 
 #define PERSPECTIVE_ROWS 280
 #define PERSPECTIVE_COLS 400
 
 vector<cv::Point2f> fixTargetPerspective(const vector<cv::Point> &contour, cv::Size binSize, mat &new_bin) {
-  cv::Mat beforeWarpCpu = mat(binSize, CV_8UC1);
+  cv::Mat beforeWarpCpu = cv::Mat(binSize, CV_8UC1);
   vector<vector<cv::Point> > drawingContours;
   drawingContours.push_back(contour);
   cv::drawContours(beforeWarpCpu, drawingContours, -1, 255, -1);
@@ -51,9 +52,13 @@ vector<cv::Point2f> fixTargetPerspective(const vector<cv::Point> &contour, cv::S
   cv::Mat warp = cv::getPerspectiveTransform(corners, destCorners);
   warpPerspective(beforeWarp, new_bin, warp, shape);
 
-  //get it back in cpu to get contours
   cv::Mat fixedCpu;
+#if CL || CUDA
+  //get it back in cpu to get contours
   new_bin.download(fixedCpu);
+#else
+  fixedCpu = new_bin;
+#endif
 
   vector<vector<cv::Point> > contours;
   cv::findContours(fixedCpu, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
@@ -165,16 +170,19 @@ void hsvThreshold(mat &img, mat &result, double hueMin, double hueMax, double sa
   bitwise_and(result, val, result);
 }
 
-list<Target*> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMax, int valMin, int valMax) {
-  list<Target*> targets;
+list<Target *> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satMax, int valMin, int valMax) {
+  list<Target *> targets;
   mat img; // GPU image
 
   //OCL doesn't support BGR2HSV on gpu cvtColor
 #if OCL
   cv::cvtColor(cpuImg, cpuImg, cv::COLOR_BGR2HSV);
   img.upload(cpuImg);
-#else
+#elif CUDA
   img.upload(cpuImg);
+  cvtColor(img, img, cv::COLOR_BGR2HSV);
+#else
+  img = cpuImg;
   cvtColor(img, img, cv::COLOR_BGR2HSV);
 #endif
 
@@ -188,8 +196,12 @@ list<Target*> find(cv::Mat &cpuImg, int hueMin, int hueMax, int satMin, int satM
   cv::Mat dilation = getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(2, 2));
   dilate(bin, bin, dilation);
 
+#if CL || CUDA
   //now we need to copy back to the CPU to find contours
   bin.download(cpuImg);
+#else
+  cpuImg = bin;
+#endif
 
   vector<vector<cv::Point> > contours;
   cv::findContours(cpuImg, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
@@ -208,9 +220,22 @@ int main() {
 #if OCL
   initOpenCL();
 #endif
-  cv::Mat img = cv::imread("/Users/vmagro/Developer/frc/RealFullField/0.jpg", cv::IMREAD_COLOR);
-  list<Target*> targets = find(img, 67, 127, 71, 255, 135, 255);
-//  list<Target> targets = find(img, 0, 255, 0, 255, 0, 255);
-  cout << "Found " << targets.size() << " targets" << endl;
+
+  cv::Mat img;
+  int imageCounter = 0;
+  while (true) {
+    stringstream path;
+    path << "/Users/vmagro/Developer/frc/RealFullField/" << imageCounter << ".jpg";
+    img = cv::imread(path.str(), cv::IMREAD_COLOR);
+
+    clock_t t = clock();
+    list<Target *> targets = find(img, 67, 127, 71, 255, 135, 255);
+//    cout << "Found " << targets.size() << " targets" << endl;
+
+    t = clock() - t;
+    double elapsedSec = ((float)t)/CLOCKS_PER_SEC;
+    cout << "time: " << elapsedSec * 1000 << "ms, found " << targets.size() << " targets" << endl;
+    imageCounter = (imageCounter + 1) % 350;
+  }
   return 0;
 }
