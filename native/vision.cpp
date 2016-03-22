@@ -223,19 +223,17 @@ int main() {
 
   cv::Mat img;
   int imageCounter = 0;
-  while (true) {
+  clock_t t = clock();
+  for (int imageCounter = 0; imageCounter < 350; imageCounter++) {
     stringstream path;
     path << "/Users/vmagro/Developer/frc/RealFullField/" << imageCounter << ".jpg";
     img = cv::imread(path.str(), cv::IMREAD_COLOR);
 
-    clock_t t = clock();
     list<Target *> targets = find(img, 67, 127, 71, 255, 135, 255);
 //    cout << "Found " << targets.size() << " targets" << endl;
-
-    t = clock() - t;
-    double elapsedSec = ((float)t)/CLOCKS_PER_SEC;
-    cout << "time: " << elapsedSec * 1000 << "ms, found " << targets.size() << " targets" << endl;
-    imageCounter = (imageCounter + 1) % 350;
   }
+  t = clock() - t;
+  double elapsedSec = ((float) t) / CLOCKS_PER_SEC;
+  cout << "time: " << elapsedSec * 1000 << "ms" << endl;
   return 0;
 }
