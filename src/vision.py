@@ -221,6 +221,9 @@ def target_center(contour):
     """
     corners = get_corners(contour)
     top_midpoint = ((corners[2][0] + corners[3][0]) / 2, (corners[2][1] + corners[3][1]) / 2)
+    top_dist = math.sqrt(math.pow(corners[2][0] - corners[3][0], 2) + math.pow(corners[2][1] - corners[3][1], 2))
+    # needs to be adjusted 5% to the left due to camera offset
+    top_midpoint = (top_midpoint[0] - 0.05 * top_dist, top_midpoint[1])
     return top_midpoint
 
 
