@@ -149,17 +149,16 @@ def camera_loop():
     camera.exposure_mode = 'backlight'
 
     print('Opened camera')
-    while True:
-        try:
-            camera.capture(rawCapture, format="bgr")
-            img = rawCapture.array
 
-            handle_image(img)
+    # capture frames from the camera
+    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        # grab the raw NumPy array representing the image
+        image = frame.array
 
-            # clear in preparation for next frame
-            rawCapture.truncate(0)
-        except:
-            print('Failed to get image from camera')
+        handle_image(image)
+
+        # clear the stream in preparation for the next frame
+        rawCapture.truncate(0)
 
 
 def image_loop():
