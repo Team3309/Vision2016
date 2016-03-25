@@ -48,11 +48,16 @@
             });
 
             //load initial values
-            $.getJSON('/target-config', function (data) {
-                for (var key in data) {
-                    if (data.hasOwnProperty(key)) {
-                        $('#' + key).val(data[key]);
-                        $('#' + key).next().text(data[key]);
+            $.getJSON('/config', function (fullConfig) {
+                for (var configKey in fullConfig) {
+                    if (fullConfig.hasOwnProperty(configKey)) {
+                        var data = fullConfig[configKey];
+                        for (var key in data) {
+                            if (data.hasOwnProperty(key)) {
+                                $('#' + key).val(data[key]);
+                                $('#' + key).next().text(data[key]);
+                            }
+                        }
                     }
                 }
             });
@@ -72,6 +77,7 @@
 
             //have variable to save newThreshConfig so that we only send it when it changes
             var newThreshConfig = null;
+            var newGainsConfig = null;
 
             // connect to server with websocket to get realtime updates
             var socket = new WebSocket("ws://" + window.location.host + "/socket");
@@ -81,6 +87,10 @@
                 if (newThreshConfig) {
                     messageData['thresholds'] = newThreshConfig;
                     newThreshConfig = null;
+                }
+                if (newGainsConfig) {
+                    messageData['camera'] = newGainsConfig;
+                    newGainsConfig = null;
                 }
                 socket.send(JSON.stringify(messageData));
                 var data = JSON.parse(event.data);
@@ -131,6 +141,16 @@
             $('form').on('submit', function (e) {
                 e.preventDefault();
                 newThreshConfig = $('#config-form').serializeObject();
+                newGainsConfig = {
+                    shutter_speed: newThreshConfig.shutter_speed,
+                    iso: newThreshConfig.iso,
+                    awb_red_gain: newThreshConfig.awb_red_gain,
+                    awb_blue_gain: newThreshConfig.awb_blue_gain
+                };
+                delete newThreshConfig.shutter_speed;
+                delete newThreshConfig.iso;
+                delete newThreshConfig.awb_red_gain;
+                delete newThreshConfig.awb_blue_gain;
             });
         });
     </script>
@@ -174,6 +194,30 @@
         <label>
             Max Brightness
             <input id="val_max" type="range" min="0" max="255" name="val_max"/>
+            <span></span>
+        </label>
+        <br>
+        <label>
+            Shutter Speed (us)
+            <input id="shutter_speed" type="range" min="0" max="33000" step="100" name="shutter_speed"/>
+            <span></span>
+        </label>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <label>
+            ISO
+            <input id="iso" type="range" min="0" max="800" step="100" name="iso"/>
+            <span></span>
+        </label>
+        <br>
+        <label>
+            AWB Red
+            <input id="awb_red_gain" type="range" min="0" max="8" step="0.25" name="awb_red_gain"/>
+            <span></span>
+        </label>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <label>
+            AWB Blue
+            <input id="awb_blue_gain" type="range" min="0" max="8" step="0.25" name="awb_blue_gain"/>
             <span></span>
         </label>
     </form>

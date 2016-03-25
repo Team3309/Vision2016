@@ -1,4 +1,10 @@
 {
+  "camera": {
+    "awb_red_gain": 4,
+    "awb_blue_gain": 4,
+    "iso": 100,
+    "shutter_speed": 30000
+  },
   "destination": "roboRIO-3309-FRC.local",
   "target": {
     "hue_max": 127,

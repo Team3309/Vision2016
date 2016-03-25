@@ -25,8 +25,6 @@ import time
 import cv2
 from flask import Flask, Response, request, jsonify
 from flask_sockets import Sockets
-from picamera import PiCamera
-from picamera.array import PiRGBArray
 
 import vision
 
@@ -72,14 +70,9 @@ state = {'ack': False, 'draw_output': False}
 config = load_config()
 
 
-@app.route('/target-config', methods=['GET', 'POST'])
+@app.route('/config', methods=['GET'])
 def config_route():
-    if request.method == 'POST':
-        config['target'] = dict((key, int(request.form.get(key))) for key in request.form.keys())
-        save_config(config)
-        return jsonify(**(config['target']))
-    else:
-        return jsonify(**(config['target']))
+    return jsonify(**(config))
 
 
 new_data_lock = threading.RLock()
@@ -109,6 +102,10 @@ def update_socket(ws):
         if 'thresholds' in received:
             config['target'] = received['thresholds']
             save_config(config)
+        if 'camera' in received:
+            config['camera'] = received['camera']
+            save_config(config)
+
     print 'websocket disconnected'
     state['draw_output'] = False
 
@@ -138,20 +135,24 @@ def handle_image(img):
 
 
 def camera_loop():
+    from picamera import PiCamera
+    from picamera.array import PiRGBArray
+
     print('Opening camera')
     camera = PiCamera()
     rawCapture = PiRGBArray(camera)
 
     camera.resolution = (640, 480)
     time.sleep(1)
+
     camera.start_preview()
     camera.awb_mode = 'off'
-    camera.awb_gains = (1.8, 1.5)
-    camera.shutter_speed = 30000
     camera.exposure_mode = 'off'
-    time.sleep(20)
 
-    print('gains', camera.digital_gain, camera.analog_gain)
+    # use initial values from config file
+    camera.awb_gains = (config['camera']['awb_red_gain'], config['camera']['awb_red_gain'])
+    camera.shutter_speed = config['camera']['shutter_speed']
+    camera.iso = config['camera']['iso']
 
     print('Opened camera')
 
@@ -165,6 +166,11 @@ def camera_loop():
         # clear the stream in preparation for the next frame
         rawCapture.truncate(0)
 
+        # set all the settings if they changed in the config
+        camera.awb_gains = (config['camera']['awb_red_gain'], config['camera']['awb_red_gain'])
+        camera.shutter_speed = config['camera']['shutter_speed']
+        camera.iso = config['camera']['iso']
+
 
 def image_loop():
     image_counter = 0
@@ -172,7 +178,6 @@ def image_loop():
         # path = '/Users/vmagro/Developer/frc/RealFullField/11.jpg'
         # path = '/Users/vmagro/Developer/frc/Vision2016/test/img/11.jpg'
         path = '/Users/vmagro/Developer/frc/RealFullField/' + str(image_counter) + '.jpg'
-        print(path)
         img = cv2.imread(path, cv2.IMREAD_COLOR)
         image_counter = (image_counter + 1) % 350
 
@@ -245,5 +250,5 @@ if __name__ == "__main__":
     ack_thread.daemon = True
     ack_thread.start()
 
-    camera_loop()
-    # image_loop()
+    # camera_loop()
+    image_loop()
