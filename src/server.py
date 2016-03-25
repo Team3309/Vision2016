@@ -142,11 +142,14 @@ def camera_loop():
     camera = PiCamera()
     rawCapture = PiRGBArray(camera)
 
-    # allow the camera to warmup
-    time.sleep(0.1)
-
-    # turn off auto exposure, arbitarily decided on using 'backlight'
-    camera.exposure_mode = 'backlight'
+    camera.resolution = (640, 480)
+    time.sleep(1)
+    camera.start_preview()
+    camera.awb_mode = 'off'
+    camera.awb_gains = (1.8, 1.5)
+    camera.shutter_speed = 30000
+    camera.exposure_mode = 'off'
+    time.sleep(20)
 
     print('Opened camera')
 
