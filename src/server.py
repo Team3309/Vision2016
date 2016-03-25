@@ -151,6 +151,8 @@ def camera_loop():
     camera.exposure_mode = 'off'
     time.sleep(20)
 
+    print('gains', camera.digital_gain, camera.analog_gain)
+
     print('Opened camera')
 
     # capture frames from the camera
