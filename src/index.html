@@ -44,6 +44,7 @@
                 console.log('input changed');
                 var elem = $(event.target);
                 elem.next().text(elem.val());
+                $('#config-form').submit();
             });
 
             //load initial values
@@ -69,11 +70,19 @@
                 return feetStr + inchesStr;
             }
 
+            //have variable to save newThreshConfig so that we only send it when it changes
+            var newThreshConfig = null;
+
             // connect to server with websocket to get realtime updates
             var socket = new WebSocket("ws://" + window.location.host + "/socket");
             socket.onmessage = function (event) {
                 // send back threshold data
-                socket.send(JSON.stringify({thresholds: $('#config-form').serializeObject()}));
+                var messageData = {};
+                if (newThreshConfig) {
+                    messageData['thresholds'] = newThreshConfig;
+                    newThreshConfig = null;
+                }
+                socket.send(JSON.stringify(messageData));
                 var data = JSON.parse(event.data);
 
                 $('#fps').text(data.fps + 'FPS');
@@ -118,6 +127,11 @@
                 }
                 ctx.fillStyle = originalFill;
             };
+
+            $('form').on('submit', function (e) {
+                e.preventDefault();
+                newThreshConfig = $('#config-form').serializeObject();
+            });
         });
     </script>
 </head>
