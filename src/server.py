@@ -25,6 +25,8 @@ import time
 import cv2
 from flask import Flask, Response, request, jsonify
 from flask_sockets import Sockets
+from picamera import PiCamera
+from picamera.array import PiRGBArray
 
 import vision
 
@@ -136,17 +138,25 @@ def handle_image(img):
 
 
 def camera_loop():
-    capture = cv2.VideoCapture()
     print('Opening camera')
-    capture.open(0)
+    camera = PiCamera()
+    rawCapture = PiRGBArray(camera)
+
+    # allow the camera to warmup
+    time.sleep(0.1)
+
+    # turn off auto exposure, arbitarily decided on using 'backlight'
+    camera.exposure_mode = 'backlight'
+
     print('Opened camera')
     while True:
-        success, img = capture.read()
-        if not success:
-            print('Failed to get image from camera')
-            continue
+        try:
+            camera.capture(rawCapture, format="bgr")
+            img = rawCapture.array
 
-        handle_image(img)
+            handle_image(img)
+        except:
+            print('Failed to get image from camera')
 
 
 def image_loop():
