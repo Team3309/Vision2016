@@ -155,6 +155,9 @@ def camera_loop():
             img = rawCapture.array
 
             handle_image(img)
+
+            # clear in preparation for next frame
+            rawCapture.truncate(0)
         except:
             print('Failed to get image from camera')
 
