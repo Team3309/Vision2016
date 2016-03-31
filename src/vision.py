@@ -19,8 +19,6 @@ import math
 import cv2
 import numpy as np
 
-import vision_util as vision_common
-
 
 def aspect_ratio_score(contour):
     rect = cv2.minAreaRect(contour)
@@ -272,22 +270,19 @@ def to_targeting_coords(target, imshape):
     return (x, y), (width, height)
 
 
-def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, draw_output, output_images):
+def find(img, green_thresh_low, green_thresh_high, draw_output, output_images):
     """
     Detect high goals in the input image
     :param img: hsv input image
-    :param hue_min:
-    :param hue_max:
-    :param sat_min:
-    :param sat_max:
-    :param val_min:
-    :param val_max:
+    :param green_thresh_low: smallest green value allowed
+    :param green_thresh_high: highest green value allowed
     :param output_images: images that show the output of various stages of the detection process
     :return: a list of the detected targets
     """
     img = np.copy(img)
 
-    bin = vision_common.hsv_threshold(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max)
+    bin = cv2.inRange(cv2.split(img)[1], green_thresh_low, green_thresh_high)
+
     # erode to remove bad dots
     erode_kernel = np.ones((1, 1), np.uint8)
     bin = cv2.erode(bin, erode_kernel, iterations=1)
@@ -309,8 +304,6 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, draw_output,
     # print 'contour filtered', original_count, 'to', len(filtered_contours)
 
     if draw_output:
-        # convert img back to bgr so it looks good when displayed
-        img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
         # draw outlines so we know it actually detected it
         polys = [cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True) for contour in filtered_contours]
         cv2.drawContours(img, polys, -1, (0, 0, 255), 2)
@@ -329,13 +322,12 @@ def find(img, hue_min, hue_max, sat_min, sat_max, val_min, val_max, draw_output,
         # aiming reticle
         cv2.circle(img, (int(imwidth / 2), int(imheight / 2)), 50, (255, 255, 255), 5)
 
-    # draw dots on the center of each target
-    for target in original_targets:  # use original_targets so we don't have to recalculate image coords
-        x = int(target[0][0])
-        y = int(target[0][1])
-        cv2.circle(img, (x, y), 10, (0, 0, 255), -1)
+        # draw dots on the center of each target
+        for target in original_targets:  # use original_targets so we don't have to recalculate image coords
+            x = int(target[0][0])
+            y = int(target[0][1])
+            cv2.circle(img, (x, y), 10, (0, 0, 255), -1)
 
-    if draw_output:
         output_images['result'] = img
 
     output_targets = [

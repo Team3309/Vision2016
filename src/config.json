@@ -7,12 +7,8 @@
   },
   "destination": "roboRIO-3309-FRC.local",
   "target": {
-    "hue_max": 127,
-    "sat_min": 71,
-    "sat_max": 255,
-    "val_min": 135,
-    "hue_min": 67,
-    "val_max": 255
+    "green_thresh_high": 90,
+    "green_thresh_low": 33
   },
   "log_directory": "/Users/vmagro/Desktop/vision-log/"
 }

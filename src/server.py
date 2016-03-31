@@ -118,12 +118,10 @@ def start_server():
 
 
 def handle_image(img):
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
     new_data_condition.acquire()
-    state['img'] = hsv
+    state['img'] = img
     args = config['target'].copy()
-    args['img'] = hsv
+    args['img'] = img
     args['draw_output'] = state['draw_output']
     args['output_images'] = {}
 
