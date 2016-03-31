@@ -264,5 +264,5 @@ if __name__ == "__main__":
     ack_thread.daemon = True
     ack_thread.start()
 
-    # camera_loop()
-    image_loop()
+    camera_loop()
+    # image_loop()
