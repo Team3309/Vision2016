@@ -23,10 +23,11 @@ import threading
 import time
 
 import cv2
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, jsonify
 from flask_sockets import Sockets
 
 import vision
+from ffmpeg_writer import FFMPEG_VideoWriter
 
 app = Flask(__name__)
 sockets = Sockets(app)
@@ -117,7 +118,20 @@ def start_server():
     server.serve_forever()
 
 
+def open_video():
+    import glob
+    video_id = len(glob.glob('recordings/*.mp4'))
+    name = 'recordings/recording_' + str(video_id) + '.mp4'
+    return FFMPEG_VideoWriter(name, (640, 480), 15)
+
+
+videoPipe = open_video()
+
+
 def handle_image(img):
+    # write out to video
+    videoPipe.write_frame(img)
+
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     new_data_condition.acquire()
@@ -250,5 +264,5 @@ if __name__ == "__main__":
     ack_thread.daemon = True
     ack_thread.start()
 
-    camera_loop()
-    # image_loop()
+    # camera_loop()
+    image_loop()

@@ -63,3 +63,5 @@ bin/
 .idea/
 include/
 pip-selfcheck.json
+
+recordings/
