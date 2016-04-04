@@ -23,7 +23,7 @@ import threading
 import time
 
 import cv2
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, jsonify
 from flask_sockets import Sockets
 
 import vision
@@ -117,6 +117,31 @@ def start_server():
     server.serve_forever()
 
 
+start = datetime.datetime.now()
+fps_smoothed = None
+
+
+def update_fps():
+    global start
+    global fps_smoothed
+
+    end = datetime.datetime.now()
+    delta = end - start
+    # frame time = 1 second / fps
+    # fps = 1 second / frame time
+    max_fps = 1 / delta.total_seconds()
+
+    # apply exponential smoothing to fps calculation
+    fps_smoothing_factor = 0.5
+    if not fps_smoothed:
+        fps_smoothed = max_fps
+    fps_smoothed = fps_smoothing_factor * max_fps + (1 - fps_smoothing_factor) * fps_smoothed
+
+    start = datetime.datetime.now()
+
+    return fps_smoothed, delta.total_seconds() * 1000
+
+
 def handle_image(img):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -132,6 +157,10 @@ def handle_image(img):
     state['output_images'] = args['output_images']
     new_data_condition.notify_all()
     new_data_condition.release()
+
+    fps, processing_time = update_fps()
+    state['fps'] = round(fps, 1)
+    print 'Processed in', processing_time, 'ms, max fps =', round(fps_smoothed, 1)
 
 
 def camera_loop():
@@ -204,36 +233,18 @@ def ack_loop():
 
 
 def comm_loop():
-    fps_smoothed = None
-    fps_smoothing_factor = 0.5
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
-        start = datetime.datetime.now()
+        new_data_condition.acquire()
+        new_data_condition.wait()
+        new_data_condition.release()
+
+        targets = state['targets']
+        message = json.dumps(targets)
         try:
-            new_data_condition.acquire()
-            new_data_condition.wait()
-            new_data_condition.release()
-
-            targets = state['targets']
-            message = json.dumps(targets)
-            try:
-                sock.sendto(message, (config['destination'], 5809))
-            except socket.error:
-                state['ack'] = False
-        finally:
-            end = datetime.datetime.now()
-            delta = end - start
-            # frame time = 1 second / fps
-            # fps = 1 second / frame time
-            max_fps = 1 / delta.total_seconds()
-
-            # apply exponential smoothing to fps calculation
-            if not fps_smoothed:
-                fps_smoothed = max_fps
-            fps_smoothed = fps_smoothing_factor * max_fps + (1 - fps_smoothing_factor) * fps_smoothed
-
-            state['fps'] = round(fps_smoothed, 1)
-            print 'Processed in', delta.total_seconds() * 1000, 'ms, max fps =', round(fps_smoothed, 1)
+            sock.sendto(message, (config['destination'], 5809))
+        except socket.error:
+            state['ack'] = False
 
 
 if __name__ == "__main__":
