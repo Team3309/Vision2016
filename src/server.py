@@ -164,41 +164,55 @@ def handle_image(img):
 
 
 def camera_loop():
-    from picamera import PiCamera
-    from picamera.array import PiRGBArray
+    use_pi = False
+    try:
+        from picamera import PiCamera
+        from picamera.array import PiRGBArray
+        use_pi = True
+    except OSError:
+        print('Couldn\'t load picamera, using OpenCV video capture')
+        use_pi = False
 
-    print('Opening camera')
-    camera = PiCamera()
-    rawCapture = PiRGBArray(camera)
+    if use_pi:
+        print('Opening camera')
+        camera = PiCamera()
+        rawCapture = PiRGBArray(camera)
 
-    camera.resolution = (640, 480)
-    time.sleep(1)
+        camera.resolution = (640, 480)
+        time.sleep(1)
 
-    camera.start_preview()
-    camera.awb_mode = 'off'
-    camera.exposure_mode = 'off'
+        camera.start_preview()
+        camera.awb_mode = 'off'
+        camera.exposure_mode = 'off'
 
-    # use initial values from config file
-    camera.awb_gains = (config['camera']['awb_red_gain'], config['camera']['awb_red_gain'])
-    camera.shutter_speed = config['camera']['shutter_speed']
-    camera.iso = config['camera']['iso']
-
-    print('Opened camera')
-
-    # capture frames from the camera
-    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-        # grab the raw NumPy array representing the image
-        image = frame.array
-
-        handle_image(image)
-
-        # clear the stream in preparation for the next frame
-        rawCapture.truncate(0)
-
-        # set all the settings if they changed in the config
+        # use initial values from config file
         camera.awb_gains = (config['camera']['awb_red_gain'], config['camera']['awb_red_gain'])
         camera.shutter_speed = config['camera']['shutter_speed']
         camera.iso = config['camera']['iso']
+
+        print('Opened camera')
+
+        # capture frames from the camera
+        for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+            # grab the raw NumPy array representing the image
+            image = frame.array
+
+            handle_image(image)
+
+            # clear the stream in preparation for the next frame
+            rawCapture.truncate(0)
+
+            # set all the settings if they changed in the config
+            camera.awb_gains = (config['camera']['awb_red_gain'], config['camera']['awb_red_gain'])
+            camera.shutter_speed = config['camera']['shutter_speed']
+            camera.iso = config['camera']['iso']
+    else:
+        print('Opening camera')
+        capture = cv2.VideoCapture(0)
+        while True:
+            success, img = capture.read()
+            if success:
+                handle_image(img)
 
 
 def image_loop():
